@@ -56,6 +56,93 @@ module.exports = require("os");
 
 /***/ }),
 
+/***/ 107:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SemVer = void 0;
+var SEMVER_REGEX = /(?<=^v?|\sv?)(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*))?(?:\+([\da-z-]+(?:\.[\da-z-]+)*))?(?=$|\s)/i;
+function SemVer(baseVer, branchMappings, preReleasePrefix, runNo, sha, ref) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise(resolve => {
+            var _a, _b, _c, _d, _e, _f, _g, _h;
+            // Validate the base SEMVER
+            const baseVerParts = baseVer.match(SEMVER_REGEX);
+            if (baseVerParts == null || baseVerParts.length < 3) {
+                throw new Error(`base-version of "${baseVer}" is not a valid SEMVER`);
+            }
+            // Get the pre-release prefix
+            if (preReleasePrefix.length > 0) {
+                preReleasePrefix += ".";
+            }
+            // Unless a tag changes it, the base ver is what we work from
+            let ver = {
+                major: parseInt((_a = baseVerParts[1]) !== null && _a !== void 0 ? _a : "0", 10),
+                minor: parseInt((_b = baseVerParts[2]) !== null && _b !== void 0 ? _b : "0", 10),
+                patch: parseInt((_c = baseVerParts[3]) !== null && _c !== void 0 ? _c : "0", 10),
+                preRelease: preReleasePrefix + runNo,
+                build: new Date().toISOString().replace(/[.:-]/g, "") + "." + sha.substring(0, 8),
+                tag: "",
+                semVer: ""
+            };
+            // Get the ref value, which is something like:
+            //  - 'refs/pull/:prNumber/merge'
+            //  - 'refs/heads/:branchName'
+            //  - 'v1.2.3'
+            if (ref == null || ref.length == 0) {
+                throw new Error("GITHUB_REF is not set");
+            }
+            // Split the ref by slashes and grab the last piece
+            let refEnd = (_d = ref.split('/').pop()) !== null && _d !== void 0 ? _d : "";
+            // If the ref is a tag, validate it as a SEMVER
+            ver.tag = refEnd;
+            if (ref.startsWith("refs/tags")) {
+                // Parse and validate the tag
+                const tagParts = refEnd.match(SEMVER_REGEX);
+                if (tagParts == null || tagParts.length == 0) {
+                    throw new Error(`Tag of "${refEnd}" is not a valid SEMVER`);
+                }
+                // Tag wins
+                ver.major = parseInt((_e = tagParts[1]) !== null && _e !== void 0 ? _e : "0", 10);
+                ver.minor = parseInt((_f = tagParts[2]) !== null && _f !== void 0 ? _f : "0", 10);
+                ver.patch = parseInt((_g = tagParts[3]) !== null && _g !== void 0 ? _g : "0", 10);
+                ver.preRelease = (_h = tagParts[4]) !== null && _h !== void 0 ? _h : "";
+            }
+            else {
+                // Handle any mappings
+                if (branchMappings.has(refEnd.toLowerCase())) {
+                    ver.tag = branchMappings.get(refEnd.toLowerCase());
+                }
+            }
+            // Put the SEMVER back together
+            ver.semVer = `${ver.major}.${ver.minor}.${ver.patch}`;
+            if (ver.preRelease.length > 0) {
+                ver.semVer += `-${ver.preRelease}`;
+            }
+            if (ver.build.length > 0) {
+                ver.semVer += `+${ver.build}`;
+            }
+            // Done
+            resolve(ver);
+        });
+    });
+}
+exports.SemVer = SemVer;
+
+
+/***/ }),
+
 /***/ 109:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -76,7 +163,7 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
     __setModuleDefault(result, mod);
     return result;
 };
@@ -89,18 +176,53 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(186));
-const wait_1 = __webpack_require__(817);
+const semver_1 = __webpack_require__(107);
+const fs_1 = __importDefault(__webpack_require__(747));
+function logAndExport(key, value) {
+    core.info(`${key}=${value}`);
+    core.exportVariable(key, value);
+}
 function run() {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const ms = core.getInput('milliseconds');
-            core.debug(`Waiting ${ms} milliseconds ...`); // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
-            core.debug(new Date().toTimeString());
-            yield wait_1.wait(parseInt(ms, 10));
-            core.debug(new Date().toTimeString());
-            core.setOutput('time', new Date().toTimeString());
+            // Get the base version
+            const baseVer = core.getInput("baseVersion", { required: true });
+            // Get the branch mappings
+            let branchMappings = new Map();
+            const mappingsLines = core.getInput("branchMappings").split("\n");
+            for (const mapping of mappingsLines) {
+                const mappingParts = mapping.trim().split(":");
+                branchMappings.set(mappingParts[0].toLowerCase(), mappingParts[1]);
+            }
+            // Get the pre-release prefix
+            let preReleasePrefix = (_a = core.getInput("prereleasePrefix")) !== null && _a !== void 0 ? _a : "";
+            // Action Env variables
+            const runNo = process.env['GITHUB_RUN_NUMBER'];
+            const sha = process.env['GITHUB_SHA'];
+            const ref = process.env['GITHUB_REF'];
+            // Process the input
+            let verInfo = yield semver_1.SemVer(baseVer, branchMappings, preReleasePrefix, runNo, sha, ref);
+            // Log and push the values back to the workflow runner environment
+            logAndExport("VERSION_TAG", verInfo.tag);
+            logAndExport("SEMVER", verInfo.semVer);
+            logAndExport("SEMVER_MAJOR", verInfo.major.toString());
+            logAndExport("SEMVER_MINOR", verInfo.minor.toString());
+            logAndExport("SEMVER_PATCH", verInfo.patch.toString());
+            logAndExport("SEMVER_PRERELEASE", verInfo.preRelease);
+            logAndExport("SEMVER_BUILD", verInfo.build);
+            // Write out the version file
+            const verFile = core.getInput("versionFile");
+            fs_1.default.writeFile(verFile, verInfo.semVer, { encoding: "utf8" }, function (err) {
+                if (err)
+                    throw err;
+                console.log(`Wrote semver to ${verFile}`);
+            });
         }
         catch (error) {
             core.setFailed(error.message);
@@ -447,34 +569,10 @@ module.exports = require("path");
 
 /***/ }),
 
-/***/ 817:
-/***/ (function(__unusedmodule, exports) {
+/***/ 747:
+/***/ (function(module) {
 
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.wait = void 0;
-function wait(milliseconds) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(resolve => {
-            if (isNaN(milliseconds)) {
-                throw new Error('milliseconds not a number');
-            }
-            setTimeout(() => resolve('done!'), milliseconds);
-        });
-    });
-}
-exports.wait = wait;
-
+module.exports = require("fs");
 
 /***/ })
 
