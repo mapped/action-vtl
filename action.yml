@@ -4,18 +4,18 @@ author: 'Mapped <info@mapped.com>'
 
 inputs:
   baseVersion:
-    description: 'The base version of this repo. This value must be manually updated when the base version is incremented.'
+    description: 'The base version of this repo. This value must be manually updated following a release tag.'
     required: true
   branchMappings:
-    description: 'Used for mapping untagged branches to tag names, such as main:latest.'
+    description: 'Used for mapping untagged branches to tag names, such as main:edge.'
     required: false
-    default: "main:latest"
+    default: "main:edge"
   prereleasePrefix:
-    description: 'The <pre-release> prefix on an untagged SEMVER'
+    description: 'The <pre-release> prefix on an untagged run.'
     required: false
     default: "prerelease"
   versionFile:
-    description: 'The filename where the full SEMVER and commit SHA should be written'
+    description: 'A filename where the full SEMVER and commit SHA will be written.'
     required: false
     default: "VERSION"
 

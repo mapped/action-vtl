@@ -1,14 +1,18 @@
 import * as core from '@actions/core';
-import {SemVer} from './semver';
+import * as github from '@actions/github';
+import {SemVer} from './version';
 import fs from 'fs';
 
-function logAndExport(key: string, value: string): void {
+function logAndOutput(key: string, value: string): void {
   core.info(`${key}=${value}`);
-  core.exportVariable(key, value);
+  core.setOutput(key, value);
 }
 
 async function run(): Promise<void> {
   try {
+    // Log the full context
+    core.debug(JSON.stringify(github.context));
+
     // Get the base version
     const baseVer = core.getInput('baseVersion', {required: true});
 
@@ -41,16 +45,26 @@ async function run(): Promise<void> {
     }
 
     // Process the input
-    const verInfo = await SemVer(baseVer, branchMappings, preReleasePrefix, runNo, sha, ref);
+    const verInfo = await SemVer(baseVer, branchMappings, preReleasePrefix, github.context);
 
-    // Log and push the values back to the workflow runner environment
-    logAndExport('VERSION_TAG', verInfo.tag);
-    logAndExport('SEMVER', verInfo.semVer);
-    logAndExport('SEMVER_MAJOR', verInfo.major.toString());
-    logAndExport('SEMVER_MINOR', verInfo.minor.toString());
-    logAndExport('SEMVER_PATCH', verInfo.patch.toString());
-    logAndExport('SEMVER_PRERELEASE', verInfo.preRelease);
-    logAndExport('SEMVER_BUILD', verInfo.build);
+    // Log and push the values back to the workflow runner
+    logAndOutput('ver.tag', verInfo.tag);
+    logAndOutput('ver.semver', verInfo.semVer);
+    logAndOutput('ver.major', verInfo.major.toString());
+    logAndOutput('ver.minor', verInfo.minor.toString());
+    logAndOutput('ver.patch', verInfo.patch.toString());
+    logAndOutput('ver.preRelease', verInfo.preRelease);
+    logAndOutput('ver.build', verInfo.build);
+
+    // Labels
+    //logAndOutput('oci.title', TODO);
+    //logAndOutput('oci.description', TODO);
+    //logAndOutput('oci.url', TODO);
+    //logAndOutput('oci.source', TODO);
+    //logAndOutput('oci.version', TODO);
+    //logAndOutput('oci.created', TODO);
+    //logAndOutput('oci.revision', TODO);
+    //logAndOutput('oci.licenses', TODO);
 
     // Write out the version file
     const verFile = core.getInput('versionFile');

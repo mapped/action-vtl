@@ -1,3 +1,5 @@
+import {Context} from '@actions/github/lib/context';
+
 const SEMVER_REGEX = /(?<=^v?|\sv?)(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*))?(?:\+([\da-z-]+(?:\.[\da-z-]+)*))?(?=$|\s)/i;
 
 export interface Version {
@@ -14,9 +16,7 @@ export async function SemVer(
   baseVer: string,
   branchMappings: Map<string, string>,
   preReleasePrefix: string,
-  runNo: string,
-  sha: string,
-  ref: string,
+  context: Context,
 ): Promise<Version> {
   return new Promise(resolve => {
     // Validate the base SEMVER
@@ -35,26 +35,23 @@ export async function SemVer(
       major: parseInt(baseVerParts[1] ?? '0', 10),
       minor: parseInt(baseVerParts[2] ?? '0', 10),
       patch: parseInt(baseVerParts[3] ?? '0', 10),
-      preRelease: preReleasePrefix + runNo,
-      build: `${new Date().toISOString().replace(/[.:-]/g, '')}.${sha.substring(0, 8)}`,
+      preRelease: preReleasePrefix + context.runNumber.toString(),
+      build: `${new Date().toISOString().replace(/[.:-]/g, '')}.${context.sha.substring(0, 8)}`,
       tag: '',
       semVer: '',
     };
 
     // Get the ref value, which is something like:
-    //  - 'refs/pull/:prNumber/merge'
-    //  - 'refs/heads/:branchName'
-    //  - 'v1.2.3'
-    if (ref == null || ref.length === 0) {
-      throw new Error('GITHUB_REF is not set');
-    }
+    //  - 'refs/pull/<prNumber>/merge'
+    //  - 'refs/heads/<branchName>'
+    //  - 'refs/tags/v1.2.3'
 
     // Split the ref by slashes and grab the last piece
-    const refEnd = ref.split('/').pop() ?? '';
+    const refEnd = context.ref.split('/').pop() ?? '';
 
     // If the ref is a tag, validate it as a SEMVER
     ver.tag = refEnd;
-    if (ref.startsWith('refs/tags')) {
+    if (context.ref.startsWith('refs/tags')) {
       // Parse and validate the tag
       const tagParts = refEnd.match(SEMVER_REGEX);
       if (tagParts == null || tagParts.length === 0) {
