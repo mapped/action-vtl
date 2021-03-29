@@ -80,15 +80,20 @@ export async function SemVer(
     // Get the branch name
     const branchName = context.ref.substring('refs/heads/'.length).toLowerCase().replace('/', '-');
 
-    // Handle any mappings
-    if (branchMappings.has(branchName)) {
-      const targetTag = branchMappings.get(branchName);
-      if (!targetTag) {
-        throw new Error("Target tag existed and then it didn't");
+    if (isPrerelease) {
+      // Handle any mappings
+      if (branchMappings.has(branchName)) {
+        const targetTag = branchMappings.get(branchName);
+        if (!targetTag) {
+          throw new Error("Target tag existed and then it didn't");
+        }
+        ver.tag = targetTag.toLowerCase();
+      } else {
+        ver.tag = branchName.toLowerCase();
       }
-      ver.tag = targetTag.toLowerCase();
     } else {
-      ver.tag = branchName.toLowerCase();
+      // Release tag was created. Need to trigger docker to put version tags
+      ver.tag = baseVer;
     }
   } else {
     throw new Error(`Unsupported event name (${context.eventName}) or ref (${context.ref})`);
