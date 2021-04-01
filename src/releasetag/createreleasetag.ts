@@ -73,11 +73,6 @@ export async function CreateReleaseTag(
     return res;
   }
 
-  // Do not create releases for tags and pull requests etc. Creation is only allowed for simple commit pushes.
-  if (context.eventName !== 'push') {
-    return res;
-  }
-
   const branchRegExp = new RegExp(`refs/heads/${releasesBranch}`);
 
   // Tagging is allowed only for one selected branch (usually main branch)
