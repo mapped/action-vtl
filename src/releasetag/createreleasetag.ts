@@ -29,6 +29,7 @@ export async function CreateReleaseTag(
   token: string | null,
   releasesBranch: string,
   baseVersionStr: string | null,
+  forcePatchIncrementIfNoChanges: boolean,
 ): Promise<CreateReleaseResult> {
   const baseVersion = ReleaseTagVersion.parse(baseVersionStr);
   if (baseVersion === null) {
@@ -143,7 +144,7 @@ export async function CreateReleaseTag(
       res.createdReleaseTag.incrementMajor();
     } else if (incrementMinor) {
       res.createdReleaseTag.incrementMinor();
-    } else if (incrementPatch) {
+    } else if (incrementPatch || forcePatchIncrementIfNoChanges) {
       res.createdReleaseTag.incrementPatch();
     } else {
       core.info(

@@ -193,7 +193,7 @@ function logAndOutputObject(key, value) {
     }
 }
 function run() {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // Log the full context
@@ -216,13 +216,15 @@ function run() {
             const gitHubToken = (_c = core.getInput('gitHubToken')) !== null && _c !== void 0 ? _c : '';
             // Get releases branch
             const releasesBranch = (_e = (_d = core.getInput('releasesBranch')) === null || _d === void 0 ? void 0 : _d.trim()) !== null && _e !== void 0 ? _e : '';
+            // Get a value indicating whether to increment patch if there is no changes detected since previous release
+            const forcePatchIncrementIfNoChanges = ((_g = (_f = core.getInput('forcePatchIncrementIfNoChanges')) === null || _f === void 0 ? void 0 : _f.trim()) === null || _g === void 0 ? void 0 : _g.toLowerCase()) === 'true';
             // Create a release tag
-            const createReleaseTagRes = yield createreleasetag_1.CreateReleaseTag(github.context, gitHubToken, releasesBranch, baseVer);
+            const createReleaseTagRes = yield createreleasetag_1.CreateReleaseTag(github.context, gitHubToken, releasesBranch, baseVer, forcePatchIncrementIfNoChanges);
             // Process the input
             const verInfo = yield version_1.SemVer(createReleaseTagRes.getBaseVersionOverride(), createReleaseTagRes.isPrerelease(), branchMappings, preReleasePrefix, github.context);
             const ociInfo = yield oci_1.GetOCI(verInfo, github.context);
             // Log and push the values back to the workflow runner
-            logAndOutputObject('release_tag', (_f = createReleaseTagRes.createdReleaseTag) === null || _f === void 0 ? void 0 : _f.toString());
+            logAndOutputObject('release_tag', (_h = createReleaseTagRes.createdReleaseTag) === null || _h === void 0 ? void 0 : _h.toString());
             logAndOutputObject('release_previousTag', createReleaseTagRes.previousReleaseTag.toString());
             logAndOutputObject('ver', verInfo);
             logAndOutputObject('oci', ociInfo);
@@ -380,7 +382,7 @@ class CreateReleaseResult {
     }
 }
 exports.CreateReleaseResult = CreateReleaseResult;
-function CreateReleaseTag(context, token, releasesBranch, baseVersionStr) {
+function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, forcePatchIncrementIfNoChanges) {
     return __awaiter(this, void 0, void 0, function* () {
         const baseVersion = releasetagversion_1.ReleaseTagVersion.parse(baseVersionStr);
         if (baseVersion === null) {
@@ -471,7 +473,7 @@ function CreateReleaseTag(context, token, releasesBranch, baseVersionStr) {
             else if (incrementMinor) {
                 res.createdReleaseTag.incrementMinor();
             }
-            else if (incrementPatch) {
+            else if (incrementPatch || forcePatchIncrementIfNoChanges) {
                 res.createdReleaseTag.incrementPatch();
             }
             else {

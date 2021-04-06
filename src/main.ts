@@ -64,12 +64,17 @@ async function run(): Promise<void> {
     // Get releases branch
     const releasesBranch = core.getInput('releasesBranch')?.trim() ?? '';
 
+    // Get a value indicating whether to increment patch if there is no changes detected since previous release
+    const forcePatchIncrementIfNoChanges =
+      core.getInput('forcePatchIncrementIfNoChanges')?.trim()?.toLowerCase() === 'true';
+
     // Create a release tag
     const createReleaseTagRes = await CreateReleaseTag(
       github.context,
       gitHubToken,
       releasesBranch,
       baseVer,
+      forcePatchIncrementIfNoChanges,
     );
 
     // Process the input

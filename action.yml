@@ -30,6 +30,10 @@ inputs:
     description: 'Branch where automatic releases should be created. Set to empty string to deactivate releases creation'
     required: false
     default: "main"
+  forcePatchIncrementIfNoChanges:
+    description: 'Forces to increment patch if no changes were made since the last release'
+    required: false
+    default: "false"
 
 outputs:
   ver_major:

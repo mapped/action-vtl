@@ -85,7 +85,7 @@ test('create first release', async () => {
     },
   ];
 
-  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer);
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
 
   expect(res.createdReleaseTag?.toString()).toBe('v2.1.0');
   expect(res.previousReleaseTag.toString()).toBe('v2.1.0');
@@ -111,7 +111,7 @@ test('create patch release', async () => {
     },
   ];
 
-  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer);
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
 
   expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
   expect(res.previousReleaseTag.toString()).toBe('v3.5.9');
@@ -137,7 +137,7 @@ test('create minor release', async () => {
     },
   ];
 
-  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer);
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
 
   expect(res.createdReleaseTag?.toString()).toBe('v3.6.0');
   expect(res.previousReleaseTag.toString()).toBe('v3.5.9');
@@ -167,7 +167,7 @@ test('create major release', async () => {
     },
   ];
 
-  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer);
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
 
   expect(res.createdReleaseTag?.toString()).toBe('v4.0.0');
   expect(res.previousReleaseTag.toString()).toBe('v3.5.9');
@@ -197,13 +197,46 @@ test('rerun for already created release', async () => {
     },
   ];
 
-  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer);
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
 
   expect(res.createdReleaseTag?.toString()).toBe('v3.5.9');
   expect(res.previousReleaseTag.toString()).toBe('v3.5.9');
   expect(res.getBaseVersionOverride()).toBe('v3.5.9');
   expect(res.isPrerelease()).toBeFalsy();
   expect(createTagMock.mock.calls.length).toBe(0);
+});
+
+test('rerun for already created release with forced patch creation', async () => {
+  const baseVer = '1.0.0';
+
+  tags = [{name: 'v3.5.9', sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf'}];
+
+  commits = [
+    {
+      message: 'feat(#taskid)!: New but already processed release commit',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Remove startup error',
+      sha: '626efe378fc93eabf78a99b8ff1d70bb7dcc68a3',
+    },
+  ];
+
+  const forceIncrementPatchIfNoChanges = true;
+  const res = await CreateReleaseTag(
+    generateContext(),
+    'token',
+    'main',
+    baseVer,
+    forceIncrementPatchIfNoChanges,
+  );
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
+  expect(res.previousReleaseTag.toString()).toBe('v3.5.9');
+  expect(res.getBaseVersionOverride()).toBe('v3.5.10');
+  expect(res.isPrerelease()).toBeFalsy();
+  expect(createTagMock.mock.calls.length).toBe(1);
+  expect(createTagMock.mock.calls[0][0]).toBe('v3.5.10');
 });
 
 test('commits in other branch', async () => {
@@ -227,6 +260,7 @@ test('commits in other branch', async () => {
     'token',
     'main',
     baseVer,
+    false,
   );
 
   expect(res.createdReleaseTag).toBeNull();

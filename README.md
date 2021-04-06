@@ -17,6 +17,8 @@ All versions are stored inside of tags. After every commit inside of the main br
 
 **NOTE**: Tags are only created in `main` branch. So if you work in a separate branch it will NOT create any release until you merge the changes into `main`.
 
+**NOTE**: If you want tags to be created on every build even if there is no any change detected from previous release then set `forcePatchIncrementIfNoChanges: true` parameter.
+
 ## Versioning
 | Event           | Ref                           | Commit SHA | Base Ver | Run # | `${{ ver_semVer }}`                                    | `${{ ver_tag }}` |
 |-----------------|-------------------------------|------------|----------|-------|--------------------------------------------------------|------------------|
