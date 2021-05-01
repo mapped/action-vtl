@@ -177,6 +177,63 @@ test('create major release', async () => {
   expect(createTagMock.mock.calls[0][0]).toBe('v4.0.0');
 });
 
+test('create major for breaking change', async () => {
+  const baseVer = '1.0.0';
+
+  tags = [{name: 'v3.5.9', sha: '626efe378fc93eabf78a99b8ff1d70bb7dcc68a3'}];
+
+  commits = [
+    {
+      message: 'feat(#taskid): Add new browsing panel\nBREAKING CHANGE: Switch to APIv2.0',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Remove startup error',
+      sha: '626efe378fc93eabf78a99b8ff1d70bb7dcc68a3',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v4.0.0');
+  expect(res.previousReleaseTag.toString()).toBe('v3.5.9');
+  expect(res.getBaseVersionOverride()).toBe('v4.0.0');
+  expect(res.isPrerelease()).toBeFalsy();
+  expect(createTagMock.mock.calls.length).toBe(1);
+  expect(createTagMock.mock.calls[0][0]).toBe('v4.0.0');
+});
+
+test('do not create major for breaking change in wrong format', async () => {
+  const baseVer = '1.0.0';
+
+  tags = [{name: 'v3.5.9', sha: '626efe378fc93eabf78a99b8ff1d70bb7dcc68a3'}];
+
+  commits = [
+    {
+      message:
+        'fix: Add new browsing panel.\nWe will do breaking change: switch to next API, but in the next release', // Wrong case
+      sha: 'bbcb3d0aae1f1a064896493f4cf63dafc1799999',
+    },
+    {
+      message: 'fix: Add new browsing panel\nBREAKING CHANGE is good but not here', // No colon
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Remove startup error',
+      sha: '626efe378fc93eabf78a99b8ff1d70bb7dcc68a3',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
+  expect(res.previousReleaseTag.toString()).toBe('v3.5.9');
+  expect(res.getBaseVersionOverride()).toBe('v3.5.10');
+  expect(res.isPrerelease()).toBeFalsy();
+  expect(createTagMock.mock.calls.length).toBe(1);
+  expect(createTagMock.mock.calls[0][0]).toBe('v3.5.10');
+});
+
 test('rerun for already created release', async () => {
   const baseVer = '1.0.0';
 

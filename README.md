@@ -12,7 +12,7 @@ All versions are stored inside of tags. After every commit inside of the main br
 |`feat(#task123): allow users to edit their profile`|Increment **MINOR** version|
 |`fix: remove memory leak inside of WebController`  |Increment **PATCH** version|
 |`feat(#task123)!: rewrite user JSON representation in API`|Add **MAJOR** version (by adding `!` sign)|
-|`fix: Remove wrong user name\nBREAKING CHANGE: Changed user name format`|Increment **MAJOR** version (by adding `BREAKING CHANGE` somewhere inside of commit message)|
+|`fix: Remove wrong user name\nBREAKING CHANGE: Changed user name format`|Increment **MAJOR** version (by adding `BREAKING CHANGE:` somewhere inside of commit message. Note that in must be in uppercase and contain `:` without any spaces in between)|
 |`Rename user profile classes`|If you do NOT follow the [conventional commit messages](https://www.conventionalcommits.org/en/v1.0.0/) then it will increment **PATCH**|
 
 **NOTE**: Tags are only created in `main` branch. So if you work in a separate branch it will NOT create any release until you merge the changes into `main`.

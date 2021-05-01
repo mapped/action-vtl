@@ -453,7 +453,7 @@ function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, forceP
                 }
                 // Breaking change rules described here https://www.conventionalcommits.org/en/v1.0.0/
                 const breakingChangeSign = matches[4];
-                if (breakingChangeSign || message.toUpperCase().includes('BREAKING CHANGE')) {
+                if (breakingChangeSign || message.includes('BREAKING CHANGE:')) {
                     incrementMajor = true;
                     continue;
                 }
