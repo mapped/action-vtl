@@ -717,7 +717,10 @@ function SemVer(baseVer, isPrerelease, branchMappings, preReleasePrefix, context
         }
         else if (context.ref.startsWith('refs/heads')) {
             // Get the branch name
-            const branchName = context.ref.substring('refs/heads/'.length).toLowerCase().replace('/', '-');
+            const branchName = context.ref
+                .substring('refs/heads/'.length)
+                .toLowerCase()
+                .replace(/\//g, '-');
             if (isPrerelease) {
                 // Handle any mappings
                 if (branchMappings.has(branchName)) {

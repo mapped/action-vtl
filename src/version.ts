@@ -78,7 +78,10 @@ export async function SemVer(
     ver.tag = `pr-${context.ref.split('/')[2]}`;
   } else if (context.ref.startsWith('refs/heads')) {
     // Get the branch name
-    const branchName = context.ref.substring('refs/heads/'.length).toLowerCase().replace('/', '-');
+    const branchName = context.ref
+      .substring('refs/heads/'.length)
+      .toLowerCase()
+      .replace(/\//g, '-');
 
     if (isPrerelease) {
       // Handle any mappings

@@ -22,6 +22,7 @@ const goodRefAndEvent = [
   {event: 'push tag', ref: 'refs/tags/v1.3.5'},
   {event: 'push tag', ref: 'refs/tags/v2.4.6-beta.2'},
   {event: 'schedule', ref: ''},
+  {event: 'push', ref: 'refs/heads/dependabot/sub1/sub2/sub3'},
 ];
 
 const goodSha8 = goodSha.substring(0, 8);
@@ -236,6 +237,16 @@ test('docker info - push', async () => {
     tags: ['test/container:edge', 'test/container:sha-' + goodSha8].join(','),
     push: 'true',
   });
+});
+
+test('docker info - push for branch with several slashes inside', async () => {
+  let ctx = generateContext(1, 8);
+  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  let dockerInfo = await GetDockerInfo('test/container', verInfo, ctx, '');
+
+  expect(dockerInfo.tags).toMatch(
+    ['test/container:dependabot-sub1-sub2-sub3', `test/container:sha-${goodSha8}`].join(','),
+  );
 });
 
 test('docker info - tag', async () => {
