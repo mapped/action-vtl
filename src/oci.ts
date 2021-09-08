@@ -34,7 +34,7 @@ export async function GetOCI(version: Version, context: Context): Promise<OCI> {
   // Get the correct SPDX license ID
   let spdxId = '';
   if (payload.repository && payload.repository.license) {
-    const license = (payload.repository.license as unknown) as License;
+    const license = payload.repository.license as unknown as License;
     if (license != null) {
       spdxId = license.spdx_id;
     } else {

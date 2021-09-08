@@ -1,6 +1,7 @@
 import {Context} from '@actions/github/lib/context';
 
-export const SEMVER_REGEX = /(?<=^v?|\sv?)(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*))?(?:\+([\da-z-]+(?:\.[\da-z-]+)*))?(?=$|\s)/i;
+export const SEMVER_REGEX =
+  /(?<=^v?|\sv?)(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*))?(?:\+([\da-z-]+(?:\.[\da-z-]+)*))?(?=$|\s)/i;
 const NUMERIC_REGEX = /^\d+$/;
 
 export interface Version {

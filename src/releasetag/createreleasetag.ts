@@ -94,7 +94,8 @@ export async function CreateReleaseTag(
     let incrementMinor = false;
     let incrementPatch = false;
     let reachedLatestReleaseCommit = false;
-    const semanticCommitRegExp = /(feat|fix|chore|refactor|style|test|docs)(\(#(\w{0,15})\))?(!)?:\s?(.*)/i;
+    const semanticCommitRegExp =
+      /(feat|fix|chore|refactor|style|test|docs)(\(#(\w{0,15})\))?(!)?:\s?(.*)/i;
 
     // Choose the most significant change among all commits since previous release
     for (const commit of commits) {
