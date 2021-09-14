@@ -1,12 +1,13 @@
 import {Context} from '@actions/github/lib/context';
-import {EventPayloads} from '@octokit/webhooks';
 import {Version} from './version';
+import {WebhookEventMap} from '@octokit/webhooks-types';
 
 // Payload types we use
 // TODO: Schedule?
-export type KnownPayload =
-  | EventPayloads.WebhookPayloadPush
-  | EventPayloads.WebhookPayloadPullRequest;
+export type KnownPayload = WebhookEventMap['push'] | WebhookEventMap['pull_request'];
+// NOTE: The above is also accessible through the following, although it burries it in a second .payload:
+//       import {EmitterWebhookEvent} from '@octokit/webhooks';
+//       export type KnownPayload = EmitterWebhookEvent<"push" | "pull_request">
 
 interface License {
   key: string;

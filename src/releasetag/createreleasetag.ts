@@ -1,5 +1,5 @@
-import {Context} from '@actions/github/lib/context';
 import * as core from '@actions/core';
+import {Context} from '@actions/github/lib/context';
 import {GitHubClient} from './githubclient';
 import {ReleaseTagVersion} from './releasetagversion';
 
