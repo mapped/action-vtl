@@ -1,8 +1,14 @@
 import * as github from '@actions/github';
-import {ReposListReleasesResponseData, OctokitResponse} from '@octokit/types';
+import {SEMVER_REGEX, Version, compareSemvers} from './version';
+import {components} from '@octokit/openapi-types';
 import {Context} from '@actions/github/lib/context';
-import {Version, SEMVER_REGEX, compareSemvers} from './version';
 import {KnownPayload} from './oci';
+
+type ReposListReleasesResponseData = components['schemas']['release'];
+// NOTE: This wors for the above as well, but following the post refactor chaos of
+//       https://github.com/octokit/types.ts/issues/267 seems to indicate components['schemas'] is better
+//       import {Endpoints} from '@octokit/types';
+//       type ReposListReleasesResponseData = Endpoints['GET /repos/{owner}/{repo}/releases']['response'];
 
 export interface DockerInfo {
   tags: string;
@@ -17,13 +23,18 @@ export async function GetDockerInfo(
 ): Promise<DockerInfo> {
   // If we have repo info and a token, get releases first
   const payload = context.payload as KnownPayload;
-  let releases: OctokitResponse<ReposListReleasesResponseData> | null = null;
+  let releases: ReposListReleasesResponseData[] | null = null;
   if (payload && token) {
     const octoKit = github.getOctokit(token);
-    releases = await octoKit.repos.listReleases({
+    const response = await octoKit.rest.repos.listReleases({
       owner: context.repo.owner, // payload.repository.owner.name ?? '',
       repo: context.repo.repo, //payload.repository.name,
     });
+    if (!Array.isArray(response)) {
+      releases = [];
+    } else {
+      releases = response;
+    }
   }
 
   const tags = new Array<string>();
@@ -61,7 +72,7 @@ export async function GetDockerInfo(
       if (releases) {
         // Look through all the releases for a newer tag
         let newest = true;
-        for (const release of releases.data) {
+        for (const release of releases) {
           // Skip pre-releases
           if (release.prerelease) {
             continue;

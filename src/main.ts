@@ -1,9 +1,9 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import {SemVer} from './version';
-import {GetOCI} from './oci';
-import {GetDockerInfo} from './docker';
 import {CreateReleaseTag} from './releasetag/createreleasetag';
+import {GetDockerInfo} from './docker';
+import {GetOCI} from './oci';
+import {SemVer} from './version';
 import fs from 'fs';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,7 +35,7 @@ function logAndOutputObject(key: string, value: any): void {
   }
 }
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     // Log the full context
     // NOTE: Debug output can be enabled by setting the secret ACTIONS_STEP_DEBUG=true
@@ -109,8 +109,12 @@ async function run(): Promise<void> {
 
       core.info(`Wrote semver to ${verFile}`);
     });
-  } catch (error) {
-    core.setFailed(error.message);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      core.setFailed(error.message);
+    } else {
+      core.setFailed('unexpected error');
+    }
   }
 }
 
