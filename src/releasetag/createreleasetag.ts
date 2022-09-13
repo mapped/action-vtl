@@ -156,7 +156,7 @@ export async function CreateReleaseTag(
   }
 
   const nextTagName = res.createdReleaseTag.toString();
-  gitHubClient.createTag(nextTagName, releaseComments, context.sha);
+  await gitHubClient.createTag(nextTagName, releaseComments, context.sha);
   core.info(`Created a tag '${nextTagName}'`);
 
   return res;
