@@ -13,9 +13,9 @@ function generateContext(branch = 'main'): Context {
     job: 'somejob',
     runNumber: 17,
     runId: 262999999,
-    apiUrl: "https://test.test.test",
-    serverUrl: "https://test.test.test",
-    graphqlUrl: "https://test.test.test",   
+    apiUrl: 'https://test.test.test',
+    serverUrl: 'https://test.test.test',
+    graphqlUrl: 'https://test.test.test',
     repo: {
       owner: 'mapped',
       repo: 'action-vtl',

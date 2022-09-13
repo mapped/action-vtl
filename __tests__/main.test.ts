@@ -38,9 +38,9 @@ function generateContext(runNoIdx: number, refIdx: number): Context {
     job: 'somejob',
     runNumber: goodRunNo[runNoIdx],
     runId: 262999999,
-    apiUrl: "https://test.test.test",
-    serverUrl: "https://test.test.test",
-    graphqlUrl: "https://test.test.test",   
+    apiUrl: 'https://test.test.test',
+    serverUrl: 'https://test.test.test',
+    graphqlUrl: 'https://test.test.test',
     repo: {
       owner: 'mapped',
       repo: 'action-vtl',
