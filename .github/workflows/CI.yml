@@ -1,0 +1,41 @@
+name: CI
+on:
+  push:
+    branches-ignore:
+      - 'renovate/3rd-party**' # Do not build 3rd party package updates automatically to avoid some hacked package stealing all our secrets https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+      - latest
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build
+        run: |
+          npm install
+          npm run all
+          cp -R dist action.yaml release/
+
+      - name: Test
+        uses: ./release
+        with:
+          baseVersion: 1.2.3
+
+      - name: Publish into latest branch
+        if: github.ref == 'refs/heads/main'
+        uses: s0/git-publish-subdir-action@v2.5.1
+         env:
+          REPO: self
+          BRANCH: latest
+          FOLDER: release
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Publish into dev branch
+        if: github.ref != 'refs/heads/main'
+        uses: s0/git-publish-subdir-action@v2.5.1
+         env:
+          REPO: self
+          BRANCH: dev
+          FOLDER: release
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
