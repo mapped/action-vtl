@@ -13,6 +13,7 @@ jobs:
 
       - name: Build
         run: |
+          mkdir release
           npm install
           npm run all
           cp -R dist action.yaml release/
