@@ -56,7 +56,7 @@ export class GitHubClient {
     );
   }
 
-  throwIfNotOk(response: OctokitResponse<any, number>): void {
+  throwIfNotOk<T>(response: OctokitResponse<T, number>): void {
     if (response.status < 200 || response.status > 299) {
       throw new Error(
         `Unexpected status code while calling GitHub API: ${
