@@ -256,7 +256,7 @@ function run() {
 // eslint-disable-next-line github/no-then
 run().catch((error) => {
     if (error instanceof Error) {
-        core.setFailed(error.message);
+        core.setFailed(error);
     }
     else {
         core.setFailed('unexpected error');
