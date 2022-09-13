@@ -171,7 +171,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const createreleasetag_1 = __nccwpck_require__(9434);
@@ -179,11 +178,9 @@ const docker_1 = __nccwpck_require__(3758);
 const oci_1 = __nccwpck_require__(1853);
 const version_1 = __nccwpck_require__(8217);
 const fs_1 = __importDefault(__nccwpck_require__(5747));
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isObject(obj) {
     return obj === Object(obj);
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function logAndOutputObject(key, value) {
     if (value == null) {
         return;
@@ -209,65 +206,62 @@ function logAndOutputObject(key, value) {
 function run() {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            // Log the full context
-            // NOTE: Debug output can be enabled by setting the secret ACTIONS_STEP_DEBUG=true
-            core.debug(JSON.stringify(github.context));
-            // Get the base version
-            const baseVer = core.getInput('baseVersion', { required: true });
-            // Get the branch mappings
-            const branchMappings = new Map();
-            const mappingsLines = core.getInput('branchMappings').split('\n');
-            for (const mapping of mappingsLines) {
-                const mappingParts = mapping.trim().split(':');
-                branchMappings.set(mappingParts[0].toLowerCase(), mappingParts[1]);
-            }
-            // Get the pre-release prefix
-            const preReleasePrefix = (_a = core.getInput('prereleasePrefix')) !== null && _a !== void 0 ? _a : '';
-            // Get the docker image name prefix
-            const dockerImage = (_b = core.getInput('dockerImage')) !== null && _b !== void 0 ? _b : '';
-            // Get the github token
-            const gitHubToken = (_c = core.getInput('gitHubToken')) !== null && _c !== void 0 ? _c : '';
-            // Get releases branch
-            const releasesBranch = (_e = (_d = core.getInput('releasesBranch')) === null || _d === void 0 ? void 0 : _d.trim()) !== null && _e !== void 0 ? _e : '';
-            // Get a value indicating whether to increment patch if there is no changes detected since previous release
-            const forcePatchIncrementIfNoChanges = ((_g = (_f = core.getInput('forcePatchIncrementIfNoChanges')) === null || _f === void 0 ? void 0 : _f.trim()) === null || _g === void 0 ? void 0 : _g.toLowerCase()) === 'true';
-            // Create a release tag
-            const createReleaseTagRes = yield (0, createreleasetag_1.CreateReleaseTag)(github.context, gitHubToken, releasesBranch, baseVer, forcePatchIncrementIfNoChanges);
-            // Process the input
-            const verInfo = yield (0, version_1.SemVer)(createReleaseTagRes.getBaseVersionOverride(), createReleaseTagRes.isPrerelease(), branchMappings, preReleasePrefix, github.context);
-            const ociInfo = yield (0, oci_1.GetOCI)(verInfo, github.context);
-            // Log and push the values back to the workflow runner
-            logAndOutputObject('release_tag', (_h = createReleaseTagRes.createdReleaseTag) === null || _h === void 0 ? void 0 : _h.toString());
-            logAndOutputObject('release_previousTag', createReleaseTagRes.previousReleaseTag.toString());
-            logAndOutputObject('ver', verInfo);
-            logAndOutputObject('oci', ociInfo);
-            // Add docker tags
-            if (dockerImage != null && dockerImage.length > 0) {
-                const dockerInfo = yield (0, docker_1.GetDockerInfo)(dockerImage, verInfo, github.context, gitHubToken);
-                logAndOutputObject('docker', dockerInfo);
-            }
-            // Write out the version file
-            const verFile = core.getInput('versionFile');
-            fs_1.default.writeFile(verFile, verInfo.semVer, { encoding: 'utf8' }, function (err) {
-                if (err) {
-                    throw err;
-                }
-                core.info(`Wrote semver to ${verFile}`);
-            });
+        // Log the full context
+        // NOTE: Debug output can be enabled by setting the secret ACTIONS_STEP_DEBUG=true
+        core.debug(JSON.stringify(github.context));
+        // Get the base version
+        const baseVer = core.getInput('baseVersion', { required: true });
+        // Get the branch mappings
+        const branchMappings = new Map();
+        const mappingsLines = core.getInput('branchMappings').split('\n');
+        for (const mapping of mappingsLines) {
+            const mappingParts = mapping.trim().split(':');
+            branchMappings.set(mappingParts[0].toLowerCase(), mappingParts[1]);
         }
-        catch (error) {
-            if (error instanceof Error) {
-                core.setFailed(error.message);
-            }
-            else {
-                core.setFailed('unexpected error');
-            }
+        // Get the pre-release prefix
+        const preReleasePrefix = (_a = core.getInput('prereleasePrefix')) !== null && _a !== void 0 ? _a : '';
+        // Get the docker image name prefix
+        const dockerImage = (_b = core.getInput('dockerImage')) !== null && _b !== void 0 ? _b : '';
+        // Get the github token
+        const gitHubToken = (_c = core.getInput('gitHubToken')) !== null && _c !== void 0 ? _c : '';
+        // Get releases branch
+        const releasesBranch = (_e = (_d = core.getInput('releasesBranch')) === null || _d === void 0 ? void 0 : _d.trim()) !== null && _e !== void 0 ? _e : '';
+        // Get a value indicating whether to increment patch if there is no changes detected since previous release
+        const forcePatchIncrementIfNoChanges = ((_g = (_f = core.getInput('forcePatchIncrementIfNoChanges')) === null || _f === void 0 ? void 0 : _f.trim()) === null || _g === void 0 ? void 0 : _g.toLowerCase()) === 'true';
+        // Create a release tag
+        const createReleaseTagRes = yield (0, createreleasetag_1.CreateReleaseTag)(github.context, gitHubToken, releasesBranch, baseVer, forcePatchIncrementIfNoChanges);
+        // Process the input
+        const verInfo = yield (0, version_1.SemVer)(createReleaseTagRes.getBaseVersionOverride(), createReleaseTagRes.isPrerelease(), branchMappings, preReleasePrefix, github.context);
+        const ociInfo = yield (0, oci_1.GetOCI)(verInfo, github.context);
+        // Log and push the values back to the workflow runner
+        logAndOutputObject('release_tag', (_h = createReleaseTagRes.createdReleaseTag) === null || _h === void 0 ? void 0 : _h.toString());
+        logAndOutputObject('release_previousTag', createReleaseTagRes.previousReleaseTag.toString());
+        logAndOutputObject('ver', verInfo);
+        logAndOutputObject('oci', ociInfo);
+        // Add docker tags
+        if (dockerImage != null && dockerImage.length > 0) {
+            const dockerInfo = yield (0, docker_1.GetDockerInfo)(dockerImage, verInfo, github.context, gitHubToken);
+            logAndOutputObject('docker', dockerInfo);
         }
+        // Write out the version file
+        const verFile = core.getInput('versionFile');
+        fs_1.default.writeFile(verFile, verInfo.semVer, { encoding: 'utf8' }, function (err) {
+            if (err) {
+                throw err;
+            }
+            core.info(`Wrote semver to ${verFile}`);
+        });
     });
 }
-exports.run = run;
-run();
+// eslint-disable-next-line github/no-then
+run().catch((error) => {
+    if (error instanceof Error) {
+        core.setFailed(error.message);
+    }
+    else {
+        core.setFailed('unexpected error');
+    }
+});
 
 
 /***/ }),
