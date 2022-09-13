@@ -1,13 +1,29 @@
 {
-    "plugins": ["jest", "@typescript-eslint"],
-    "extends": ["plugin:github/recommended", "eslint:recommended", "plugin:jest/recommended"],
+    "plugins": ["jest", "@typescript-eslint", "import"],
+    "extends": [
+      "plugin:github/recommended", 
+      "eslint:recommended",
+      "plugin:jest/recommended",
+      "plugin:import/errors",
+      "plugin:import/warnings",
+      "plugin:import/typescript"
+    ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
       "ecmaVersion": 9,
       "sourceType": "module",
       "project": "./tsconfig.json"
     },
+    "settings": {
+      "import/resolver": {
+        "node": {
+          "extensions": [".js", ".jsx", ".ts", ".tsx"]
+        }
+      }
+    },
     "rules": {
+      "import/no-unresolved": "off", // Turn off "Unable to resolve path to module ..." error
+      "import/extensions": "off", // Turn off "Missing file extension for ..." error
       "eslint-comments/no-use": "off",
       "i18n-text/no-en": "off",
       "import/no-namespace": "off",
