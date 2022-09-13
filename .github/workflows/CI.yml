@@ -25,16 +25,16 @@ jobs:
       - name: Publish into latest branch
         if: github.ref == 'refs/heads/main'
         uses: s0/git-publish-subdir-action@v2.5.1
-         env:
+        env:
           REPO: self
           BRANCH: latest
           FOLDER: release
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Publish into dev branch
         if: github.ref != 'refs/heads/main'
         uses: s0/git-publish-subdir-action@v2.5.1
-         env:
+        env:
           REPO: self
           BRANCH: dev
           FOLDER: release
