@@ -506,7 +506,7 @@ function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, forceP
             }
         }
         const nextTagName = res.createdReleaseTag.toString();
-        gitHubClient.createTag(nextTagName, releaseComments, context.sha);
+        yield gitHubClient.createTag(nextTagName, releaseComments, context.sha);
         core.info(`Created a tag '${nextTagName}'`);
         return res;
     });
@@ -569,7 +569,6 @@ class GitHubClient {
                 repo: this.repo,
                 per_page: 100, // There might be some custom tags. Take the maximum amount of items to avoid searching for the valid latest release through several pages
             });
-            this.throwIfNotOk(res);
             return res.data;
         });
     }
@@ -581,32 +580,26 @@ class GitHubClient {
                 sha: startFromSha,
                 per_page: 100, // Do not search for the latest release commit forever
             });
-            this.throwIfNotOk(res);
             return res.data;
         });
     }
     createTag(tagName, comments, commitSha) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.throwIfNotOk(yield this.octokit.request('POST /repos/{owner}/{repo}/git/tags', {
+            yield this.octokit.request('POST /repos/{owner}/{repo}/git/tags', {
                 owner: this.owner,
                 repo: this.repo,
                 tag: tagName,
                 message: comments,
                 object: commitSha,
                 type: 'commit',
-            }));
-            this.throwIfNotOk(yield this.octokit.request('POST /repos/{owner}/{repo}/git/refs', {
+            });
+            yield this.octokit.request('POST /repos/{owner}/{repo}/git/refs', {
                 owner: this.owner,
                 repo: this.repo,
                 ref: `refs/tags/${tagName}`,
                 sha: commitSha,
-            }));
+            });
         });
-    }
-    throwIfNotOk(response) {
-        if (response.status < 200 || response.status > 299) {
-            throw new Error(`Unexpected status code while calling GitHub API: ${response.status}. Data: ${JSON.stringify(response.data)}`);
-        }
     }
 }
 exports.GitHubClient = GitHubClient;
