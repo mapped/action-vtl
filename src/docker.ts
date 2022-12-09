@@ -5,7 +5,7 @@ import {Context} from '@actions/github/lib/context';
 import {KnownPayload} from './oci';
 
 type ReposListReleasesResponseData = components['schemas']['release'];
-// NOTE: This wors for the above as well, but following the post refactor chaos of
+// NOTE: This works for the above as well, but following the post refactor chaos of
 //       https://github.com/octokit/types.ts/issues/267 seems to indicate components['schemas'] is better
 //       import {Endpoints} from '@octokit/types';
 //       type ReposListReleasesResponseData = Endpoints['GET /repos/{owner}/{repo}/releases']['response'];
@@ -18,6 +18,7 @@ export interface DockerInfo {
 export async function GetDockerInfo(
   dockerImage: string,
   version: Version,
+  dockerPlatformSuffix: string,
   context: Context,
   token: string | null,
 ): Promise<DockerInfo> {
@@ -40,19 +41,24 @@ export async function GetDockerInfo(
   const tags = new Array<string>();
   let shouldPush = true;
 
+  // Add the `-` separator to dockerPlatformSuffix
+  if (dockerPlatformSuffix.length > 0) {
+    dockerPlatformSuffix = `-${dockerPlatformSuffix}`;
+  }
+
   // Add the version tag if it is not latest
   if (version.tag !== 'latest') {
     // Without any 'v' prefix
     if (SEMVER_REGEX.test(version.tag) && version.tag.substring(0, 1).toLowerCase() === 'v') {
-      tags.push(`${dockerImage}:${version.tag.substring(1)}`);
+      tags.push(`${dockerImage}:${version.tag.substring(1)}${dockerPlatformSuffix}`);
     } else {
-      tags.push(`${dockerImage}:${version.tag}`);
+      tags.push(`${dockerImage}:${version.tag}${dockerPlatformSuffix}`);
     }
   }
 
   // For any push we add a sha tag
   if (context.eventName === 'push') {
-    tags.push(`${dockerImage}:sha-${context.sha.substring(0, 8)}`);
+    tags.push(`${dockerImage}:sha-${context.sha.substring(0, 8)}${dockerPlatformSuffix}`);
   }
 
   // If the version's tag is a SEMVER, we need semver stable tags
@@ -61,12 +67,14 @@ export async function GetDockerInfo(
     // Is this a pre-release?
     if (version.preRelease && version.preRelease.length > 0) {
       // Pre-release, only the full semver
-      tags.push(`${dockerImage}:${version.semVerNoMeta}`);
+      tags.push(`${dockerImage}:${version.semVerNoMeta}${dockerPlatformSuffix}`);
     } else {
       // Not a pre-release, get all stable tags
-      tags.push(`${dockerImage}:${version.major}`);
-      tags.push(`${dockerImage}:${version.major}.${version.minor}`);
-      tags.push(`${dockerImage}:${version.major}.${version.minor}.${version.patch}`);
+      tags.push(`${dockerImage}:${version.major}${dockerPlatformSuffix}`);
+      tags.push(`${dockerImage}:${version.major}.${version.minor}${dockerPlatformSuffix}`);
+      tags.push(
+        `${dockerImage}:${version.major}.${version.minor}.${version.patch}${dockerPlatformSuffix}`,
+      );
 
       // Tagged build gets the 'latest' tag if it is the highest semver tag created
       if (releases) {
@@ -87,7 +95,7 @@ export async function GetDockerInfo(
 
         // If we didn't find a newer tag, add latest
         if (newest) {
-          tags.push(`${dockerImage}:latest`);
+          tags.push(`${dockerImage}:latest${dockerPlatformSuffix}`);
         }
       }
     }

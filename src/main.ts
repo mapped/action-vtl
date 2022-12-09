@@ -33,7 +33,7 @@ function logAndOutputObject<T>(key: string, value: T): void {
   }
 }
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   // Log the full context
   // NOTE: Debug output can be enabled by setting the secret ACTIONS_STEP_DEBUG=true
   core.debug(JSON.stringify(github.context));
@@ -54,6 +54,9 @@ async function run(): Promise<void> {
 
   // Get the docker image name prefix
   const dockerImage = core.getInput('dockerImage') ?? '';
+
+  // Get the docker platform label suffix
+  const dockerPlatformSuffix = core.getInput('dockerPlatformSuffix') ?? '';
 
   // Get the github token
   const gitHubToken = core.getInput('gitHubToken') ?? '';
@@ -93,7 +96,13 @@ async function run(): Promise<void> {
 
   // Add docker tags
   if (dockerImage != null && dockerImage.length > 0) {
-    const dockerInfo = await GetDockerInfo(dockerImage, verInfo, github.context, gitHubToken);
+    const dockerInfo = await GetDockerInfo(
+      dockerImage,
+      verInfo,
+      dockerPlatformSuffix,
+      github.context,
+      gitHubToken,
+    );
     logAndOutputObject('docker', dockerInfo);
   }
 
