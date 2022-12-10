@@ -237,8 +237,9 @@ test('docker info - push', async () => {
   let ctx = generateContext(1, 0);
   let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, '', ctx, '')).resolves.toMatchObject({
-    tags: ['test/container:edge', 'test/container:sha-' + goodSha8].join(','),
+    tags: ['test/container:edge', `test/container:sha-${goodSha8}`].join(','),
     push: 'true',
+    dtag: `test/container:sha-${goodSha8}`,
   });
 });
 
@@ -246,31 +247,33 @@ test('docker info - push w/platform', async () => {
   let ctx = generateContext(1, 0);
   let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, 'platx', ctx, '')).resolves.toMatchObject({
-    tags: ['test/container:edge-platx', 'test/container:sha-' + goodSha8 + '-platx'].join(','),
+    tags: ['test/container:edge-platx', `test/container:sha-${goodSha8}-platx`].join(','),
     push: 'true',
+    dtag: `test/container:sha-${goodSha8}-platx`,
   });
 });
 
 test('docker info - push for branch with several slashes inside', async () => {
   let ctx = generateContext(1, 8);
   let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
-  let dockerInfo = await GetDockerInfo('test/container', verInfo, '', ctx, '');
-
-  expect(dockerInfo.tags).toMatch(
-    ['test/container:dependabot-sub1-sub2-sub3', `test/container:sha-${goodSha8}`].join(','),
-  );
+  await expect(GetDockerInfo('test/container', verInfo, '', ctx, '')).resolves.toMatchObject({
+    tags: ['test/container:dependabot-sub1-sub2-sub3', `test/container:sha-${goodSha8}`].join(','),
+    push: 'true',
+    dtag: `test/container:sha-${goodSha8}`,
+  });
 });
 
 test('docker info - push for branch with several slashes inside w/platform', async () => {
   let ctx = generateContext(1, 8);
   let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
-  let dockerInfo = await GetDockerInfo('test/container', verInfo, 'platx', ctx, '');
-
-  expect(dockerInfo.tags).toMatch(
-    ['test/container:dependabot-sub1-sub2-sub3-platx', `test/container:sha-${goodSha8}-platx`].join(
-      ',',
-    ),
-  );
+  await expect(GetDockerInfo('test/container', verInfo, 'platx', ctx, '')).resolves.toMatchObject({
+    tags: [
+      'test/container:dependabot-sub1-sub2-sub3-platx',
+      `test/container:sha-${goodSha8}-platx`,
+    ].join(','),
+    push: 'true',
+    dtag: `test/container:sha-${goodSha8}-platx`,
+  });
 });
 
 test('docker info - tag', async () => {
@@ -279,6 +282,7 @@ test('docker info - tag', async () => {
   await expect(GetDockerInfo('test/container', verInfo, '', ctx, '')).resolves.toMatchObject({
     tags: ['test/container:1.3.5', 'test/container:1', 'test/container:1.3'].join(','),
     push: 'true',
+    dtag: `test/container:1.3.5`,
   });
 });
 
@@ -290,6 +294,7 @@ test('docker info - tag w/platform', async () => {
       ',',
     ),
     push: 'true',
+    dtag: `test/container:1.3.5-platx`,
   });
 });
 
@@ -299,6 +304,7 @@ test('docker info - pr', async () => {
   await expect(GetDockerInfo('test/container', verInfo, '', ctx, '')).resolves.toMatchObject({
     tags: 'test/container:pr-37',
     push: 'false',
+    dtag: 'test/container:pr-37',
   });
 });
 
@@ -308,6 +314,7 @@ test('docker info - pr w/platform', async () => {
   await expect(GetDockerInfo('test/container', verInfo, 'platx', ctx, '')).resolves.toMatchObject({
     tags: 'test/container:pr-37-platx',
     push: 'false',
+    dtag: 'test/container:pr-37-platx',
   });
 });
 

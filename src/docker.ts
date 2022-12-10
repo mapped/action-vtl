@@ -11,6 +11,7 @@ type ReposListReleasesResponseData = components['schemas']['release'];
 //       type ReposListReleasesResponseData = Endpoints['GET /repos/{owner}/{repo}/releases']['response'];
 
 export interface DockerInfo {
+  dtag: string;
   tags: string;
   push: string;
 }
@@ -46,19 +47,29 @@ export async function GetDockerInfo(
     dockerPlatformSuffix = `-${dockerPlatformSuffix}`;
   }
 
+  // Get a deterministic tag
+  let dtag = '';
+
   // Add the version tag if it is not latest
   if (version.tag !== 'latest') {
     // Without any 'v' prefix
+    let tag = '';
     if (SEMVER_REGEX.test(version.tag) && version.tag.substring(0, 1).toLowerCase() === 'v') {
-      tags.push(`${dockerImage}:${version.tag.substring(1)}${dockerPlatformSuffix}`);
+      tag = `${dockerImage}:${version.tag.substring(1)}${dockerPlatformSuffix}`;
     } else {
-      tags.push(`${dockerImage}:${version.tag}${dockerPlatformSuffix}`);
+      tag = `${dockerImage}:${version.tag}${dockerPlatformSuffix}`;
     }
+    tags.push(tag);
+    dtag = tag;
   }
 
   // For any push we add a sha tag
   if (context.eventName === 'push') {
-    tags.push(`${dockerImage}:sha-${context.sha.substring(0, 8)}${dockerPlatformSuffix}`);
+    const tag = `${dockerImage}:sha-${context.sha.substring(0, 8)}${dockerPlatformSuffix}`;
+    tags.push(tag);
+
+    // SHA based is always the most deterministic, so overwrite the semver dtag from above
+    dtag = tag;
   }
 
   // If the version's tag is a SEMVER, we need semver stable tags
@@ -67,14 +78,24 @@ export async function GetDockerInfo(
     // Is this a pre-release?
     if (version.preRelease && version.preRelease.length > 0) {
       // Pre-release, only the full semver
-      tags.push(`${dockerImage}:${version.semVerNoMeta}${dockerPlatformSuffix}`);
+      const tag = `${dockerImage}:${version.semVerNoMeta}${dockerPlatformSuffix}`;
+      tags.push(tag);
+      // If we don't already have a dtag, use this
+      if (!dtag) {
+        dtag = tag;
+      }
     } else {
       // Not a pre-release, get all stable tags
       tags.push(`${dockerImage}:${version.major}${dockerPlatformSuffix}`);
       tags.push(`${dockerImage}:${version.major}.${version.minor}${dockerPlatformSuffix}`);
-      tags.push(
-        `${dockerImage}:${version.major}.${version.minor}.${version.patch}${dockerPlatformSuffix}`,
-      );
+
+      const fulltag = `${dockerImage}:${version.major}.${version.minor}.${version.patch}${dockerPlatformSuffix}`;
+      tags.push(fulltag);
+
+      // If we don't already have a dtag, use this
+      if (!dtag) {
+        dtag = fulltag;
+      }
 
       // Tagged build gets the 'latest' tag if it is the highest semver tag created
       if (releases) {
@@ -111,6 +132,7 @@ export async function GetDockerInfo(
 
   // Put together the output
   const dockerInfo: DockerInfo = {
+    dtag,
     tags: uniqueTags.join(','),
     push: shouldPush.toString(),
   };
