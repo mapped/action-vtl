@@ -329,3 +329,35 @@ test('commits in other branch', async () => {
   expect(res.isPrerelease()).toBeTruthy();
   expect(createTagMock.mock.calls.length).toBe(0);
 });
+
+test('github api returns already exists error while creating tag', async () => {
+  const baseVer = '1.0.0';
+
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+
+  commits = [
+    {
+      message: 'fix: Color glitch',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'feat: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  // Simulate github api returning already exists error.
+  // We should ignore this error and continue.
+  createTagMock.mockImplementationOnce(() => {
+    throw new Error('Reference already exists');
+  });
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
+  expect(res.previousReleaseTag.toString()).toBe('v3.5.9');
+  expect(res.getBaseVersionOverride()).toBe('v3.5.10');
+  expect(res.isPrerelease()).toBeFalsy();
+  expect(createTagMock.mock.calls.length).toBe(1);
+  expect(createTagMock.mock.calls[0][0]).toBe('v3.5.10');
+});
