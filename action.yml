@@ -9,31 +9,35 @@ inputs:
   dockerImage:
     description: 'The name of the docker image to produce tags for. If omitted, no docker tags will be produced.'
     required: false
-    default: ""
+    default: ''
   gitHubToken:
     description: 'The GITHUB_TOKEN value. Required to produce latest tags.'
     required: false
-    default: ""
+    default: ''
   branchMappings:
     description: 'Used for mapping untagged branches to tag names, such as main:edge.'
     required: false
-    default: "main:edge"
+    default: 'main:edge'
   prereleasePrefix:
     description: 'The <pre-release> prefix on an untagged run.'
     required: false
-    default: "prerelease"
+    default: 'prerelease'
   versionFile:
     description: 'A filename where the full SEMVER and commit SHA will be written.'
     required: false
-    default: "VERSION"
+    default: 'VERSION'
   releasesBranch:
     description: 'Branch where automatic releases should be created. Set to empty string to deactivate releases creation'
     required: false
-    default: "main"
+    default: 'main'
   forcePatchIncrementIfNoChanges:
     description: 'Forces to increment patch if no changes were made since the last release'
     required: false
-    default: "false"
+    default: 'false'
+  dockerPlatformSuffix:
+    description: 'Adds a suffix to the docker tag to identify the platform that can be referenced by a composit manifest'
+    required: false
+    default: ''
 
 outputs:
   ver_major:
@@ -61,6 +65,8 @@ outputs:
     description: A list of docker tags that can be passed to docker/build-push-action@v2
   docker_push:
     description: A true/false flag that can be passed to docker/build-push-action@v2
+  docker_dtag:
+    description: The most deterministic of the tags in docker_tags.
 
   oci_title:
     description: The org.opencontainers.image.title label
@@ -89,5 +95,5 @@ runs:
   main: 'dist/index.js'
 
 branding:
-    icon: target
-    color: 'blue'
+  icon: target
+  color: 'blue'
