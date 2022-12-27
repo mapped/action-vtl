@@ -528,7 +528,17 @@ function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, forceP
         }
         const nextTagName = res.createdReleaseTag.toString();
         core.info(`Creating a tag '${nextTagName}'...`);
-        yield gitHubClient.createTag(nextTagName, releaseComments, context.sha);
+        try {
+            yield gitHubClient.createTag(nextTagName, releaseComments, context.sha);
+            /* eslint-disable @typescript-eslint/no-explicit-any */
+        }
+        catch (error) {
+            if (error && error.message && error.message.includes('Reference already exists')) {
+                // We should ignore this error and continue.
+                // It happens when several parallel jobs try to create the same release tag.
+                core.warning(`GitHub API says that tag '${nextTagName}' already exists. Ignoring this error...`);
+            }
+        }
         core.info(`Created a tag '${nextTagName}'`);
         return res;
     });
