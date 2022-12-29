@@ -91,7 +91,7 @@ outputs:
     description: Release tag. Contains version or empty value if release was not created.
 
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/index.js'
 
 branding:
