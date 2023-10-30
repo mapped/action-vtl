@@ -23,7 +23,7 @@ inputs:
     required: false
     default: 'prerelease'
   versionFile:
-    description: 'A filename where the full SEMVER and commit SHA will be written.'
+    description: 'A filename where the full SEMVER and commit SHA will be written. Set to empty string if you do not want a version file to be created.'
     required: false
     default: 'VERSION'
   releasesBranch:

@@ -271,12 +271,14 @@ function run() {
         }
         // Write out the version file
         const verFile = core.getInput('versionFile');
-        fs_1.default.writeFile(verFile, verInfo.semVer, { encoding: 'utf8' }, function (err) {
-            if (err) {
-                throw err;
-            }
-            core.info(`Wrote semver to ${verFile}`);
-        });
+        if (verFile) {
+            fs_1.default.writeFile(verFile, verInfo.semVer, { encoding: 'utf8' }, function (err) {
+                if (err) {
+                    throw err;
+                }
+                core.info(`Wrote semver to ${verFile}`);
+            });
+        }
     });
 }
 exports.run = run;
