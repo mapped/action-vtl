@@ -108,7 +108,7 @@ export async function run(): Promise<void> {
 
   // Write out the version file
   const verFile = core.getInput('versionFile');
-  if (!verFile) {
+  if (verFile) {
     fs.writeFile(verFile, verInfo.semVer, {encoding: 'utf8'}, function (err) {
       if (err) {
         throw err;
