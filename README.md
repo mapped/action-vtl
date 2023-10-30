@@ -97,17 +97,17 @@ _(These outputs are not shown in the examples below for brevity)_
 
 The following inputs can be passed to this action as `step.with` keys:
 
-| Name                             | Type   | Description                                                                                                                     |
-| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `baseVersion`                    | String | The base version of this repo. The first version of release. Applied if there is no any release yet. "v" prefix is optional.    |
-| `dockerImage`                    | String | The name of the docker image to produce tags for. If omitted, no docker tags will be produced. (default ``)                     |
-| `gitHubToken`                    | String | The GITHUB_TOKEN value. Required to produce latest tags. (default ``)                                                           |
-| `branchMappings`                 | List   | Used for mapping untagged branches to tag names. Mappings are one per line, each as `branch:target_name`. (default `main:edge`) |
-| `prereleasePrefix`               | String | The <pre-release> prefix on an untagged run. (default `prerelease`)                                                             |
-| `versionFile`                    | String | A filename where the full SEMVER and commit SHA will be written. (default `VERSION`)                                            |
-| `releasesBranch`                 | String | Branch where automatic releases should be created. Set to empty string to deactivate releases creation. (default `main`)        |
-| `forcePatchIncrementIfNoChanges` | String | Forces to increment patch if no changes were made since the last release. (default ``)                                          |
-| `dockerPlatformSuffix`           | String | Adds a suffix to the docker tag to identify the platform that can be referenced by a composit manifest. (default ``)            |
+| Name                             | Type   | Description                                                                                                                                               |
+| -------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseVersion`                    | String | The base version of this repo. The first version of release. Applied if there is no any release yet. "v" prefix is optional.                              |
+| `dockerImage`                    | String | The name of the docker image to produce tags for. If omitted, no docker tags will be produced. (default ``)                                               |
+| `gitHubToken`                    | String | The GITHUB_TOKEN value. Required to produce latest tags. (default ``)                                                                                     |
+| `branchMappings`                 | List   | Used for mapping untagged branches to tag names. Mappings are one per line, each as `branch:target_name`. (default `main:edge`)                           |
+| `prereleasePrefix`               | String | The <pre-release> prefix on an untagged run. (default `prerelease`)                                                                                       |
+| `versionFile`                    | String | A filename where the full SEMVER and commit SHA will be written. Set to empty string if you do not want a version file to be created. (default `VERSION`) |
+| `releasesBranch`                 | String | Branch where automatic releases should be created. Set to empty string to deactivate releases creation. (default `main`)                                  |
+| `forcePatchIncrementIfNoChanges` | String | Forces to increment patch if no changes were made since the last release. (default ``)                                                                    |
+| `dockerPlatformSuffix`           | String | Adds a suffix to the docker tag to identify the platform that can be referenced by a composit manifest. (default ``)                                      |
 
 ## Examples:
 

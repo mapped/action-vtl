@@ -108,13 +108,15 @@ export async function run(): Promise<void> {
 
   // Write out the version file
   const verFile = core.getInput('versionFile');
-  fs.writeFile(verFile, verInfo.semVer, {encoding: 'utf8'}, function (err) {
-    if (err) {
-      throw err;
-    }
+  if (verFile) {
+    fs.writeFile(verFile, verInfo.semVer, {encoding: 'utf8'}, function (err) {
+      if (err) {
+        throw err;
+      }
 
-    core.info(`Wrote semver to ${verFile}`);
-  });
+      core.info(`Wrote semver to ${verFile}`);
+    });
+  }
 }
 
 // eslint-disable-next-line github/no-then
