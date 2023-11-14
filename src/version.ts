@@ -15,7 +15,7 @@ export interface Version {
   buildNumber: string;
   created: string;
   semVerNoMeta: string;
-  semVerNoMetaPyPI: string;
+  semVerNoMetaPyPA: string;
   semVerFourTupleNumeric: string;
 }
 
@@ -50,7 +50,7 @@ export async function SemVer(
     tag: '',
     semVer: '',
     semVerNoMeta: '',
-    semVerNoMetaPyPI: '',
+    semVerNoMetaPyPA: '',
     semVerFourTupleNumeric: '',
   };
 
@@ -107,10 +107,10 @@ export async function SemVer(
 
   // Put the SEMVER together
   ver.semVer = `${ver.major}.${ver.minor}.${ver.patch}`;
-  ver.semVerNoMetaPyPI = ver.semVer;
+  ver.semVerNoMetaPyPA = ver.semVer;
   if (ver.preRelease.length > 0) {
     ver.semVer += `-${ver.preRelease}`;
-    ver.semVerNoMetaPyPI += `+${ver.preRelease}`;
+    ver.semVerNoMetaPyPA += `+${ver.preRelease}`;
   }
   ver.semVerNoMeta = ver.semVer;
   if (ver.metadata.length > 0) {
