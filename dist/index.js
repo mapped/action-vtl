@@ -750,6 +750,7 @@ function SemVer(baseVer, isPrerelease, branchMappings, preReleasePrefix, context
             tag: '',
             semVer: '',
             semVerNoMeta: '',
+            semVerNoMetaPyPA: '',
             semVerFourTupleNumeric: '',
         };
         // Update the tag and version based on the event name and ref values
@@ -806,8 +807,10 @@ function SemVer(baseVer, isPrerelease, branchMappings, preReleasePrefix, context
         }
         // Put the SEMVER together
         ver.semVer = `${ver.major}.${ver.minor}.${ver.patch}`;
+        ver.semVerNoMetaPyPA = ver.semVer;
         if (ver.preRelease.length > 0) {
             ver.semVer += `-${ver.preRelease}`;
+            ver.semVerNoMetaPyPA += `+${ver.preRelease}`;
         }
         ver.semVerNoMeta = ver.semVer;
         if (ver.metadata.length > 0) {
