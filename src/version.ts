@@ -50,6 +50,7 @@ export async function SemVer(
     tag: '',
     semVer: '',
     semVerNoMeta: '',
+    semVerNoMetaPyPI: '',
     semVerFourTupleNumeric: '',
   };
 
