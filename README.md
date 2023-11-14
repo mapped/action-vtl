@@ -191,7 +191,7 @@ steps.vtl.outputs.ver_created='2020-09-19T20:22:19.571Z'
 steps.vtl.outputs.ver_tag='edge'
 steps.vtl.outputs.ver_semVer='1.2.3-prerelease.23+20200919T202219571Z.sha-a8cb3d0e'
 steps.vtl.outputs.ver_semVerNoMeta='1.2.3-prerelease.23'
-steps.vtl.outputs.ver_semVerNoMetaPyPI='1.2.3+prerelease.23'
+steps.vtl.outputs.ver_semVerNoMetaPyPA='1.2.3+prerelease.23'
 
 steps.vtl.outputs.docker_tags='owner/container-name:edge,owner/container-name:sha-a8cb3d0e'
 steps.vtl.outputs.docker_push='true'
