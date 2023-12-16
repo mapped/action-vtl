@@ -30,7 +30,7 @@
     "@actions/github": "^5.0.3",
     "@octokit/core": "^4.0.5",
     "@octokit/types": "^8.0.0",
-    "@octokit/webhooks": "^10.1.5"
+    "@octokit/webhooks": "^10.9.2"
   },
   "devDependencies": {
     "@octokit/openapi-types": "^14.0.0",
