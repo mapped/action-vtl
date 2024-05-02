@@ -1,6 +1,7 @@
 {
   "extends": "@octokit/tsconfig",
   "compilerOptions": {
+    "lib": ["DOM", "ESNext"],
     "target": "ES2020",                       /* Specify ECMAScript target version */
     "module": "Node16",                       /* Specify module code generation */
     "outDir": "./lib",                        /* Redirect output structure to the directory. */
