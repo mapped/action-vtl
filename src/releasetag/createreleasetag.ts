@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
-import {Context} from '@actions/github/lib/context';
-import {GitHubClient} from './githubclient';
-import {ReleaseTagVersion} from './releasetagversion';
+import type {Context} from '@actions/github/lib/context.js';
+import {GitHubClient} from './githubclient.js';
+import {ReleaseTagVersion} from './releasetagversion.js';
 
 export class CreateReleaseResult {
   constructor(

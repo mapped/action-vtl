@@ -1,9 +1,9 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import {CreateReleaseTag} from './releasetag/createreleasetag';
-import {GetDockerInfo} from './docker';
-import {GetOCI} from './oci';
-import {SemVer} from './version';
+import {CreateReleaseTag} from './releasetag/createreleasetag.js';
+import {GetDockerInfo} from './docker.js';
+import {GetOCI} from './oci.js';
+import {SemVer} from './version.js';
 import fs from 'fs';
 
 function isObject<T>(obj: T): boolean {

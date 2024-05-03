@@ -1,7 +1,11 @@
 export class ReleaseTagVersion {
   private static regexp = /v?(\d+).(\d+).(\d+)/;
 
-  constructor(private major: number, private minor: number, private patch: number) {}
+  constructor(
+    private major: number,
+    private minor: number,
+    private patch: number,
+  ) {}
 
   getMajor(): number {
     return this.major;
