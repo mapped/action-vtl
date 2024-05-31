@@ -45,7 +45,7 @@ export async function CreateReleaseTag(
   }
 
   const gitHubClient = new GitHubClient(token, context.repo.owner, context.repo.repo);
-  const tags = await gitHubClient.getTags({contains: tagPrefix});
+  const tags = await gitHubClient.getTags({contains: tagPrefix, stopFetchingOnFirstMatch: true});
   const commits = await gitHubClient.getCommits(context.sha);
 
   // Find the previous tag

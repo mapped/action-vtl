@@ -12,7 +12,10 @@ export class GitHubClient {
     this.octokit = github.getOctokit(token);
   }
 
-  async getTags(options?: {contains?: string | null}): Promise<TagInfo[]> {
+  async getTags(options?: {
+    contains?: string | null;
+    stopFetchingOnFirstMatch?: boolean;
+  }): Promise<TagInfo[]> {
     const tags: TagInfo[] = [];
 
     const fetchTags = async (page: number) => {
@@ -27,8 +30,17 @@ export class GitHubClient {
     let page = 1;
     let res = await fetchTags(page);
 
-    while (res.data.length >= 100) {
+    while (res.data.length > 0) {
       tags.push(...res.data);
+
+      if (
+        options?.stopFetchingOnFirstMatch &&
+        options?.contains &&
+        res.data.find(t => t.name.includes(options?.contains || ''))
+      ) {
+        break;
+      }
+
       page++;
       res = await fetchTags(page);
     }
