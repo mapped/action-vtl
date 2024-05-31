@@ -1,5 +1,5 @@
 import * as github from '@actions/github';
-import type {GitHub} from '@actions/github/lib/utils.js';
+import type { GitHub } from '@actions/github/lib/utils.js';
 
 export class GitHubClient {
   private octokit: InstanceType<typeof GitHub>;
@@ -12,14 +12,34 @@ export class GitHubClient {
     this.octokit = github.getOctokit(token);
   }
 
-  async getTags(): Promise<TagInfo[]> {
-    const res = await this.octokit.rest.repos.listTags({
-      owner: this.owner,
-      repo: this.repo,
-      per_page: 100, // There might be some custom tags. Take the maximum amount of items to avoid searching for the valid latest release through several pages
-    });
+  async getTags(options?: { contains?: string | null }): Promise<TagInfo[]> {
+    const tags: TagInfo[] = [];
 
-    return res.data;
+    const fetchTags = async (page: number) => {
+      return await this.octokit.rest.repos.listTags({
+        owner: this.owner,
+        repo: this.repo,
+        per_page: 100,
+        page,
+      });
+    };
+
+    let page = 1;
+    let res = await fetchTags(page);
+
+    while (res.data.length >= 100) {
+      tags.push(...res.data);
+      page++;
+      res = await fetchTags(page);
+    }
+
+    return tags.filter(t => {
+      if (options?.contains) {
+        return t.name.includes(options.contains);
+      }
+
+      return true;
+    });
   }
 
   async getCommits(startFromSha: string): Promise<CommitInfo[]> {
