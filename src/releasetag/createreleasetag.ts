@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
-import type { Context } from '@actions/github/lib/context.js';
-import { GitHubClient } from './githubclient.js';
-import { ReleaseTagVersion } from './releasetagversion.js';
+import type {Context} from '@actions/github/lib/context.js';
+import {GitHubClient} from './githubclient.js';
+import {ReleaseTagVersion} from './releasetagversion.js';
 
 export class CreateReleaseResult {
   constructor(
@@ -13,7 +13,7 @@ export class CreateReleaseResult {
 
     // Previous version commit sha. Null if previous version was not created yet (only in case when there are no valid release tags in repo).
     public previousReleaseTagCommitSha: string | null,
-  ) { }
+  ) {}
 
   isPrerelease(): boolean {
     return this.createdReleaseTag === null;
@@ -45,7 +45,7 @@ export async function CreateReleaseTag(
   }
 
   const gitHubClient = new GitHubClient(token, context.repo.owner, context.repo.repo);
-  const tags = await gitHubClient.getTags({ contains: tagPrefix });
+  const tags = await gitHubClient.getTags({contains: tagPrefix});
   const commits = await gitHubClient.getCommits(context.sha);
 
   // Find the previous tag
@@ -137,7 +137,8 @@ export async function CreateReleaseTag(
 
     if (!reachedLatestReleaseCommit) {
       throw Error(
-        `Failed to reach the latest release tag '${res.previousReleaseTag.toString()}' (${res.previousReleaseTagCommitSha
+        `Failed to reach the latest release tag '${res.previousReleaseTag.toString()}' (${
+          res.previousReleaseTagCommitSha
         }) inside of the '${releasesBranch}' branch.`,
       );
     }
