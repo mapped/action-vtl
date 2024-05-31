@@ -31322,8 +31322,13 @@ class GitHubClient {
         };
         let page = 1;
         let res = await fetchTags(page);
-        while (res.data.length >= 100) {
+        while (res.data.length > 0) {
             tags.push(...res.data);
+            if (options?.stopFetchingOnFirstMatch &&
+                options?.contains &&
+                res.data.find(t => t.name.includes(options?.contains || ''))) {
+                break;
+            }
             page++;
             res = await fetchTags(page);
         }
@@ -31451,7 +31456,7 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
         return res;
     }
     const gitHubClient = new GitHubClient(token, context.repo.owner, context.repo.repo);
-    const tags = await gitHubClient.getTags({ contains: tagPrefix });
+    const tags = await gitHubClient.getTags({ contains: tagPrefix, stopFetchingOnFirstMatch: true });
     const commits = await gitHubClient.getCommits(context.sha);
     // Find the previous tag
     for (const tag of tags) {
