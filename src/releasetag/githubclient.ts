@@ -1,5 +1,6 @@
 import * as github from '@actions/github';
 import type {GitHub} from '@actions/github/lib/utils.js';
+import {ReleaseTagVersion} from './releasetagversion.js';
 
 export class GitHubClient {
   private octokit: InstanceType<typeof GitHub>;
@@ -16,7 +17,7 @@ export class GitHubClient {
     contains?: string | null;
     stopFetchingOnFirstMatch?: boolean;
   }): Promise<TagInfo[]> {
-    const tags: TagInfo[] = [];
+    let tags: TagInfo[] = [];
 
     const fetchTags = async (page: number) => {
       return await this.octokit.rest.repos.listTags({
@@ -45,7 +46,7 @@ export class GitHubClient {
       res = await fetchTags(page);
     }
 
-    const filteredTags = tags.filter(t => {
+    tags = tags.filter(t => {
       if (options?.contains) {
         return t.name.includes(options.contains);
       }
@@ -53,20 +54,50 @@ export class GitHubClient {
       return true;
     });
 
-    console.log(filteredTags.map(t => t.name).join(', '));
+    tags = tags.sort((a, b) => {
+      const versionA = ReleaseTagVersion.parse(a.name.replace(options?.contains || '', ''));
+      const versionB = ReleaseTagVersion.parse(b.name.replace(options?.contains || '', ''));
 
-    return filteredTags;
-  }
+      if (versionA === null || versionB === null) {
+        return 0;
+      }
 
-  async getCommits(startFromSha: string): Promise<CommitInfo[]> {
-    const res = await this.octokit.rest.repos.listCommits({
-      owner: this.owner,
-      repo: this.repo,
-      sha: startFromSha,
-      per_page: 100, // Do not search for the latest release commit forever
+      return versionA.isGreaterOrEqualTo(versionB) ? -1 : 1;
     });
 
-    return res.data;
+    console.log('Found tags:', tags);
+
+    return tags;
+  }
+
+  async getCommits(options: {startFromSha: string; stopAtSha?: string}): Promise<CommitInfo[]> {
+    const commits: CommitInfo[] = [];
+
+    const fetchCommits = async (page: number) => {
+      return await this.octokit.rest.repos.listCommits({
+        owner: this.owner,
+        repo: this.repo,
+        sha: options.startFromSha,
+        page,
+        per_page: 100,
+      });
+    };
+
+    let page = 1;
+    let res = await fetchCommits(page);
+
+    while (res.data.length > 0) {
+      commits.push(...res.data);
+
+      if (options?.stopAtSha && res.data.find(c => c.sha === options.stopAtSha)) {
+        break;
+      }
+
+      page++;
+      res = await fetchCommits(page);
+    }
+
+    return commits;
   }
 
   async createTag(tagName: string, comments: string, commitSha: string): Promise<void> {
