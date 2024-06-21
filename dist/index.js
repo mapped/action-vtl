@@ -31302,72 +31302,6 @@ async function GetOCI(version, context) {
     return oci;
 }
 //# sourceMappingURL=oci.js.map
-;// CONCATENATED MODULE: ./lib/releasetag/githubclient.js
-
-class GitHubClient {
-    constructor(token, owner, repo) {
-        this.owner = owner;
-        this.repo = repo;
-        this.octokit = github.getOctokit(token);
-    }
-    async getTags(options) {
-        const tags = [];
-        const fetchTags = async (page) => {
-            return await this.octokit.rest.repos.listTags({
-                owner: this.owner,
-                repo: this.repo,
-                per_page: 100,
-                page,
-            });
-        };
-        let page = 1;
-        let res = await fetchTags(page);
-        while (res.data.length > 0) {
-            tags.push(...res.data);
-            if (options?.stopFetchingOnFirstMatch &&
-                options?.contains &&
-                res.data.find(t => t.name.includes(options?.contains || ''))) {
-                break;
-            }
-            page++;
-            res = await fetchTags(page);
-        }
-        const filteredTags = tags.filter(t => {
-            if (options?.contains) {
-                return t.name.includes(options.contains);
-            }
-            return true;
-        });
-        console.log(filteredTags.map(t => t.name).join(', '));
-        return filteredTags;
-    }
-    async getCommits(startFromSha) {
-        const res = await this.octokit.rest.repos.listCommits({
-            owner: this.owner,
-            repo: this.repo,
-            sha: startFromSha,
-            per_page: 100, // Do not search for the latest release commit forever
-        });
-        return res.data;
-    }
-    async createTag(tagName, comments, commitSha) {
-        await this.octokit.rest.git.createTag({
-            owner: this.owner,
-            repo: this.repo,
-            tag: tagName,
-            message: comments,
-            object: commitSha,
-            type: 'commit',
-        });
-        await this.octokit.rest.git.createRef({
-            owner: this.owner,
-            repo: this.repo,
-            ref: `refs/tags/${tagName}`,
-            sha: commitSha,
-        });
-    }
-}
-//# sourceMappingURL=githubclient.js.map
 ;// CONCATENATED MODULE: ./lib/releasetag/releasetagversion.js
 class ReleaseTagVersion {
     constructor(major, minor, patch) {
@@ -31424,6 +31358,95 @@ class ReleaseTagVersion {
 }
 ReleaseTagVersion.regexp = /v?(\d+).(\d+).(\d+)/;
 //# sourceMappingURL=releasetagversion.js.map
+;// CONCATENATED MODULE: ./lib/releasetag/githubclient.js
+
+
+class GitHubClient {
+    constructor(token, owner, repo) {
+        this.owner = owner;
+        this.repo = repo;
+        this.octokit = github.getOctokit(token);
+    }
+    async getTags(options) {
+        let tags = [];
+        const fetchTags = async (page) => {
+            return await this.octokit.rest.repos.listTags({
+                owner: this.owner,
+                repo: this.repo,
+                per_page: 100,
+                page,
+            });
+        };
+        let page = 1;
+        let res = await fetchTags(page);
+        while (res.data.length > 0) {
+            tags.push(...res.data);
+            if (options?.stopFetchingOnFirstMatch &&
+                options?.contains &&
+                res.data.find(t => t.name.includes(options?.contains || ''))) {
+                break;
+            }
+            page++;
+            res = await fetchTags(page);
+        }
+        tags = tags.filter(t => {
+            if (options?.contains) {
+                return t.name.includes(options.contains);
+            }
+            return true;
+        });
+        tags = tags.sort((a, b) => {
+            const versionA = ReleaseTagVersion.parse(a.name.replace(options?.contains || '', ''));
+            const versionB = ReleaseTagVersion.parse(b.name.replace(options?.contains || '', ''));
+            if (versionA === null || versionB === null) {
+                return 0;
+            }
+            return versionA.isGreaterOrEqualTo(versionB) ? -1 : 1;
+        });
+        console.log('Found tags:', tags);
+        return tags;
+    }
+    async getCommits(options) {
+        const commits = [];
+        const fetchCommits = async (page) => {
+            return await this.octokit.rest.repos.listCommits({
+                owner: this.owner,
+                repo: this.repo,
+                sha: options.startFromSha,
+                page,
+                per_page: 100,
+            });
+        };
+        let page = 1;
+        let res = await fetchCommits(page);
+        while (res.data.length > 0) {
+            commits.push(...res.data);
+            if (options?.stopAtSha && res.data.find(c => c.sha === options.stopAtSha)) {
+                break;
+            }
+            page++;
+            res = await fetchCommits(page);
+        }
+        return commits;
+    }
+    async createTag(tagName, comments, commitSha) {
+        await this.octokit.rest.git.createTag({
+            owner: this.owner,
+            repo: this.repo,
+            tag: tagName,
+            message: comments,
+            object: commitSha,
+            type: 'commit',
+        });
+        await this.octokit.rest.git.createRef({
+            owner: this.owner,
+            repo: this.repo,
+            ref: `refs/tags/${tagName}`,
+            sha: commitSha,
+        });
+    }
+}
+//# sourceMappingURL=githubclient.js.map
 ;// CONCATENATED MODULE: ./lib/releasetag/createreleasetag.js
 
 
@@ -31458,8 +31481,11 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
         return res;
     }
     const gitHubClient = new GitHubClient(token, context.repo.owner, context.repo.repo);
-    const tags = await gitHubClient.getTags({ contains: tagPrefix });
-    const commits = await gitHubClient.getCommits(context.sha);
+    const tags = await gitHubClient.getTags({ contains: tagPrefix, stopFetchingOnFirstMatch: true });
+    const commits = await gitHubClient.getCommits({
+        startFromSha: context.sha,
+        stopAtSha: tags?.[0]?.commit?.sha,
+    });
     // Find the previous tag
     for (const tag of tags) {
         const tagName = tag.name.replace(tagPrefix, '');
