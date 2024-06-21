@@ -31332,12 +31332,14 @@ class GitHubClient {
             page++;
             res = await fetchTags(page);
         }
-        return tags.filter(t => {
+        const filteredTags = tags.filter(t => {
             if (options?.contains) {
                 return t.name.includes(options.contains);
             }
             return true;
         });
+        console.log(filteredTags.map(t => t.name).join(', '));
+        return filteredTags;
     }
     async getCommits(startFromSha) {
         const res = await this.octokit.rest.repos.listCommits({
