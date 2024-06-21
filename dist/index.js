@@ -31408,6 +31408,7 @@ class GitHubClient {
     }
     async getCommits(options) {
         const commits = [];
+        console.log('Fetching commits until sha:', options.stopAtSha || 'all commits');
         const fetchCommits = async (page) => {
             return await this.octokit.rest.repos.listCommits({
                 owner: this.owner,
@@ -31422,6 +31423,7 @@ class GitHubClient {
         while (res.data.length > 0) {
             commits.push(...res.data);
             if (options?.stopAtSha && res.data.find(c => c.sha === options.stopAtSha)) {
+                console.log('Found commit', options.stopAtSha, '. Stopping fetching.');
                 break;
             }
             page++;
