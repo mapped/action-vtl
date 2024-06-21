@@ -19,6 +19,12 @@ export class GitHubClient {
   }): Promise<TagInfo[]> {
     let tags: TagInfo[] = [];
 
+    console.log(
+      'Fetching tags...',
+      options?.contains ? `that contains: ${options.contains}` : '',
+      options?.stopFetchingOnFirstMatch ? 'and stop fetching on first match' : '',
+    );
+
     const fetchTags = async (page: number) => {
       return await this.octokit.rest.repos.listTags({
         owner: this.owner,
@@ -39,6 +45,7 @@ export class GitHubClient {
         options?.contains &&
         res.data.find(t => t.name.includes(options?.contains || ''))
       ) {
+        console.log('Found tag that contains', options?.contains, '-- Tags fetching stopped.');
         break;
       }
 
