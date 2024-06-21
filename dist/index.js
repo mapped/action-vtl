@@ -31401,14 +31401,14 @@ class GitHubClient {
             if (versionA === null || versionB === null) {
                 return 0;
             }
-            return versionA.isGreaterOrEqualTo(versionB) ? -1 : 1;
+            return versionA.isGreaterOrEqualTo(versionB) ? 1 : -1;
         });
-        console.log('Found tags:', tags);
+        console.log('Found tags:', tags.map(t => t.name).join(', '));
         return tags;
     }
     async getCommits(options) {
         const commits = [];
-        console.log('Fetching commits until sha:', options.stopAtSha || 'all commits');
+        console.log('Fetching commits until tag sha:', options.stopAtSha);
         const fetchCommits = async (page) => {
             return await this.octokit.rest.repos.listCommits({
                 owner: this.owner,
@@ -31423,7 +31423,7 @@ class GitHubClient {
         while (res.data.length > 0) {
             commits.push(...res.data);
             if (options?.stopAtSha && res.data.find(c => c.sha === options.stopAtSha)) {
-                console.log('Found commit', options.stopAtSha, '. Stopping fetching.');
+                console.log('Found commit', options.stopAtSha, '-- Commits fetching stopped.');
                 break;
             }
             page++;
