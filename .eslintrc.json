@@ -22,6 +22,7 @@
     }
   },
   "rules": {
+    "no-console": "off",
     "import/no-unresolved": "off", // Turn off "Unable to resolve path to module ..." error
     "import/extensions": "off", // Turn off "Missing file extension for ..." error
     "eslint-comments/no-use": "off",

@@ -1,5 +1,5 @@
 import * as github from '@actions/github';
-import type { GitHub } from '@actions/github/lib/utils.js';
+import type {GitHub} from '@actions/github/lib/utils.js';
 
 export class GitHubClient {
   private octokit: InstanceType<typeof GitHub>;
