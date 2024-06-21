@@ -1,5 +1,5 @@
 import * as github from '@actions/github';
-import type {GitHub} from '@actions/github/lib/utils.js';
+import type { GitHub } from '@actions/github/lib/utils.js';
 
 export class GitHubClient {
   private octokit: InstanceType<typeof GitHub>;
@@ -45,13 +45,17 @@ export class GitHubClient {
       res = await fetchTags(page);
     }
 
-    return tags.filter(t => {
+    const filteredTags = tags.filter(t => {
       if (options?.contains) {
         return t.name.includes(options.contains);
       }
 
       return true;
     });
+
+    console.log(filteredTags.map(t => t.name).join(', '));
+
+    return filteredTags;
   }
 
   async getCommits(startFromSha: string): Promise<CommitInfo[]> {
