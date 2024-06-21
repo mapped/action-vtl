@@ -62,7 +62,7 @@ export class GitHubClient {
         return 0;
       }
 
-      return versionA.isGreaterOrEqualTo(versionB) ? 1 : -1;
+      return versionA.isGreaterOrEqualTo(versionB) ? -1 : 1;
     });
 
     console.log('Found tags:', tags.map(t => t.name).join(', '));
