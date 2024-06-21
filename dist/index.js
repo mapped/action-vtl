@@ -31369,6 +31369,7 @@ class GitHubClient {
     }
     async getTags(options) {
         let tags = [];
+        console.log('Fetching tags...', options?.contains ? `that contains: ${options.contains}` : '', options?.stopFetchingOnFirstMatch ? 'and stop fetching on first match' : '');
         const fetchTags = async (page) => {
             return await this.octokit.rest.repos.listTags({
                 owner: this.owner,
@@ -31384,6 +31385,7 @@ class GitHubClient {
             if (options?.stopFetchingOnFirstMatch &&
                 options?.contains &&
                 res.data.find(t => t.name.includes(options?.contains || ''))) {
+                console.log('Found tag that contains', options?.contains, '-- Tags fetching stopped.');
                 break;
             }
             page++;
