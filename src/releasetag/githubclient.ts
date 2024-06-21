@@ -73,6 +73,8 @@ export class GitHubClient {
   async getCommits(options: {startFromSha: string; stopAtSha?: string}): Promise<CommitInfo[]> {
     const commits: CommitInfo[] = [];
 
+    console.log('Fetching commits until sha:', options.stopAtSha || 'all commits');
+
     const fetchCommits = async (page: number) => {
       return await this.octokit.rest.repos.listCommits({
         owner: this.owner,
@@ -90,6 +92,7 @@ export class GitHubClient {
       commits.push(...res.data);
 
       if (options?.stopAtSha && res.data.find(c => c.sha === options.stopAtSha)) {
+        console.log('Found commit', options.stopAtSha, '. Stopping fetching.');
         break;
       }
 
