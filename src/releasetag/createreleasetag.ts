@@ -30,6 +30,7 @@ export async function CreateReleaseTag(
   releasesBranch: string,
   baseVersionStr: string | null,
   forcePatchIncrementIfNoChanges: boolean,
+  tagPrefix = '',
 ): Promise<CreateReleaseResult> {
   const baseVersion = ReleaseTagVersion.parse(baseVersionStr);
   if (baseVersion === null) {
@@ -44,12 +45,16 @@ export async function CreateReleaseTag(
   }
 
   const gitHubClient = new GitHubClient(token, context.repo.owner, context.repo.repo);
-  const tags = await gitHubClient.getTags();
-  const commits = await gitHubClient.getCommits(context.sha);
+  const tags = await gitHubClient.getTags({contains: tagPrefix, stopFetchingOnFirstMatch: true});
+  const commits = await gitHubClient.getCommits({
+    startFromSha: context.sha,
+    stopAtSha: tags?.[0]?.commit?.sha,
+  });
 
   // Find the previous tag
   for (const tag of tags) {
-    const ver = ReleaseTagVersion.parse(tag.name);
+    const tagName = tag.name.replace(tagPrefix, '');
+    const ver = ReleaseTagVersion.parse(tagName);
 
     // Skip releases with invalid format
     if (ver === null) {
@@ -155,7 +160,7 @@ export async function CreateReleaseTag(
     }
   }
 
-  const nextTagName = res.createdReleaseTag.toString();
+  const nextTagName = tagPrefix + res.createdReleaseTag.toString();
   core.info(`Creating a tag '${nextTagName}'...`);
 
   try {
