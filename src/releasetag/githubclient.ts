@@ -1,4 +1,5 @@
 import * as github from '@actions/github';
+import * as core from '@actions/core';
 import type {GitHub} from '@actions/github/lib/utils.js';
 
 export class GitHubClient {
@@ -43,7 +44,7 @@ export class GitHubClient {
       type: 'commit',
     });
 
-    console.log(`Tag response: ${JSON.stringify(tagResp)}`);
+    core.info(`Tag response: ${JSON.stringify(tagResp)}`);
 
     if (tagResp.status < 200 || tagResp.status > 299) {
       throw Error(`Failed to create tag: ${tagResp.status} ${tagResp.data?.message}`);
@@ -56,7 +57,7 @@ export class GitHubClient {
       sha: commitSha,
     });
 
-    console.log(`Ref response: ${JSON.stringify(refResp)}`);
+    core.info(`Ref response: ${JSON.stringify(refResp)}`);
 
     if (refResp.status < 200 || refResp.status > 299) {
       throw Error(`Failed to create tag reference. Github API returned code ${refResp.status}`);
