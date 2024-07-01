@@ -43,6 +43,8 @@ export class GitHubClient {
       type: 'commit',
     });
 
+    console.log(`Tag response: ${JSON.stringify(tagResp)}`);
+
     if (tagResp.status < 200 || tagResp.status > 299) {
       throw Error(`Failed to create tag: ${tagResp.status} ${tagResp.data?.message}`);
     }
@@ -53,6 +55,8 @@ export class GitHubClient {
       ref: `refs/tags/${tagName}`,
       sha: commitSha,
     });
+
+    console.log(`Ref response: ${JSON.stringify(refResp)}`);
 
     if (refResp.status < 200 || refResp.status > 299) {
       throw Error(`Failed to create tag reference. Github API returned code ${refResp.status}`);

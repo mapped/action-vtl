@@ -305,4 +305,4 @@ and create a `VERSION` file with the contents:
    $ npm run all
    ```
 
-1. Commit to the repo and it will automatically publish to `latest` (if you pushed to `main`) or `dev` (if you are outside of `main`) branch
+1. Commit to the repo and it will automatically publish to `latest` (if you pushed to `main`) or `dev-<your-branch>` (if you are outside of `main`) branch
