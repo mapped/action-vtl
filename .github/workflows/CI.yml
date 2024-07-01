@@ -3,8 +3,6 @@ on:
   push:
     branches-ignore:
       - 'renovate/3rd-party**' # Do not build 3rd party package updates automatically to avoid some hacked package stealing all our secrets https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
-      - latest
-      - dev
 
 jobs:
   ci:
@@ -24,20 +22,22 @@ jobs:
         with:
           baseVersion: 1.2.3
 
-      - name: Publish into latest branch
-        if: github.ref == 'refs/heads/main'
-        uses: s0/git-publish-subdir-action@v2.6.0
-        env:
-          REPO: self
-          BRANCH: latest
-          FOLDER: release
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release branch name
+        id: release_branch_name
+        run: |
+          branch=latest
 
-      - name: Publish into dev branch
-        if: github.ref != 'refs/heads/main'
+          if [[ $GITHUB_REF != refs/heads/main ]]; then
+            branch=dev-${GITHUB_REF#refs/heads/}
+          fi
+
+          echo "branch=$branch"
+          echo "branch=$branch" >> $GITHUB_OUTPUT
+          
+      - name: Publish into release branch
         uses: s0/git-publish-subdir-action@v2.6.0
         env:
           REPO: self
-          BRANCH: dev
+          BRANCH: ${{ steps.release_branch_name.outputs.branch }}
           FOLDER: release
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
