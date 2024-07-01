@@ -30951,7 +30951,6 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 ;// CONCATENATED MODULE: ./lib/releasetag/githubclient.js
 
-
 class GitHubClient {
     constructor(token, owner, repo) {
         this.owner = owner;
@@ -30976,7 +30975,7 @@ class GitHubClient {
         return res.data;
     }
     async createTag(tagName, comments, commitSha) {
-        const tagResp = await this.octokit.rest.git.createTag({
+        await this.octokit.rest.git.createTag({
             owner: this.owner,
             repo: this.repo,
             tag: tagName,
@@ -30984,20 +30983,12 @@ class GitHubClient {
             object: commitSha,
             type: 'commit',
         });
-        core.warning(`Tag response: ${tagResp.status} ${tagResp.data?.message}`);
-        if (tagResp.status < 200 || tagResp.status > 299) {
-            throw Error(`Failed to create tag: ${tagResp.status} ${tagResp.data?.message}`);
-        }
-        const refResp = await this.octokit.rest.git.createRef({
+        await this.octokit.rest.git.createRef({
             owner: this.owner,
             repo: this.repo,
             ref: `refs/tags/${tagName}`,
             sha: commitSha,
         });
-        core.warning(`Ref response: ${refResp.status}`);
-        if (refResp.status < 200 || refResp.status > 299) {
-            throw Error(`Failed to create tag reference. Github API returned code ${refResp.status}`);
-        }
     }
 }
 //# sourceMappingURL=githubclient.js.map
@@ -31190,6 +31181,7 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
             // It happens when several parallel jobs try to create the same release tag.
             core.warning(`GitHub API says that tag '${nextTagName}' already exists. Ignoring this error...`);
         }
+        throw new Error(`Failed to create a tag ${nextTagName}: ${JSON.stringify(error)}`);
     }
     core.info(`Created a tag '${nextTagName}'`);
     return res;
