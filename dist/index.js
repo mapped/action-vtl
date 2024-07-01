@@ -31181,6 +31181,9 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
             // It happens when several parallel jobs try to create the same release tag.
             core.warning(`GitHub API says that tag '${nextTagName}' already exists. Ignoring this error...`);
         }
+        else {
+            throw new Error(`Failed to create a tag ${nextTagName}: ${JSON.stringify(error)}`);
+        }
     }
     core.info(`Created a tag '${nextTagName}'`);
     return res;
