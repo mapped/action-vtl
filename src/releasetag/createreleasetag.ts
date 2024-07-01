@@ -169,6 +169,8 @@ export async function CreateReleaseTag(
         `GitHub API says that tag '${nextTagName}' already exists. Ignoring this error...`,
       );
     }
+
+    throw new Error(`Failed to create a tag ${nextTagName}: ${JSON.stringify(error)}`);
   }
 
   core.info(`Created a tag '${nextTagName}'`);

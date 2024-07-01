@@ -1,5 +1,4 @@
 import * as github from '@actions/github';
-import * as core from '@actions/core';
 import type {GitHub} from '@actions/github/lib/utils.js';
 
 export class GitHubClient {
@@ -35,7 +34,7 @@ export class GitHubClient {
   }
 
   async createTag(tagName: string, comments: string, commitSha: string): Promise<void> {
-    const tagResp = await this.octokit.rest.git.createTag({
+    await this.octokit.rest.git.createTag({
       owner: this.owner,
       repo: this.repo,
       tag: tagName,
@@ -44,24 +43,12 @@ export class GitHubClient {
       type: 'commit',
     });
 
-    core.warning(`Tag response: ${tagResp.status} ${tagResp.data?.message}`);
-
-    if (tagResp.status < 200 || tagResp.status > 299) {
-      throw Error(`Failed to create tag: ${tagResp.status} ${tagResp.data?.message}`);
-    }
-
-    const refResp = await this.octokit.rest.git.createRef({
+    await this.octokit.rest.git.createRef({
       owner: this.owner,
       repo: this.repo,
       ref: `refs/tags/${tagName}`,
       sha: commitSha,
     });
-
-    core.warning(`Ref response: ${refResp.status}`);
-
-    if (refResp.status < 200 || refResp.status > 299) {
-      throw Error(`Failed to create tag reference. Github API returned code ${refResp.status}`);
-    }
   }
 }
 
