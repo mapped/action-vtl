@@ -30951,6 +30951,7 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 ;// CONCATENATED MODULE: ./lib/releasetag/githubclient.js
 
+
 class GitHubClient {
     constructor(token, owner, repo) {
         this.owner = owner;
@@ -30983,6 +30984,7 @@ class GitHubClient {
             object: commitSha,
             type: 'commit',
         });
+        core.info(`Tag response: ${JSON.stringify(tagResp)}`);
         if (tagResp.status < 200 || tagResp.status > 299) {
             throw Error(`Failed to create tag: ${tagResp.status} ${tagResp.data?.message}`);
         }
@@ -30992,6 +30994,7 @@ class GitHubClient {
             ref: `refs/tags/${tagName}`,
             sha: commitSha,
         });
+        core.info(`Ref response: ${JSON.stringify(refResp)}`);
         if (refResp.status < 200 || refResp.status > 299) {
             throw Error(`Failed to create tag reference. Github API returned code ${refResp.status}`);
         }
