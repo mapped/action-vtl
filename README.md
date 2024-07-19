@@ -104,6 +104,7 @@ The following inputs can be passed to this action as `step.with` keys:
 | `gitHubToken`                    | String | The GITHUB_TOKEN value. Required to produce latest tags. (default ``)                                                                                     |
 | `branchMappings`                 | List   | Used for mapping untagged branches to tag names. Mappings are one per line, each as `branch:target_name`. (default `main:edge`)                           |
 | `prereleasePrefix`               | String | The <pre-release> prefix on an untagged run. (default `prerelease`)                                                                                       |
+| `tagPrefix`                      | String | Prefix GitHub tag names with a string of your choice.                                                                                                     |
 | `versionFile`                    | String | A filename where the full SEMVER and commit SHA will be written. Set to empty string if you do not want a version file to be created. (default `VERSION`) |
 | `releasesBranch`                 | String | Branch where automatic releases should be created. Set to empty string to deactivate releases creation. (default `main`)                                  |
 | `forcePatchIncrementIfNoChanges` | String | Forces to increment patch if no changes were made since the last release. (default ``)                                                                    |
