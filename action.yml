@@ -22,6 +22,10 @@ inputs:
     description: 'The <pre-release> prefix on an untagged run.'
     required: false
     default: 'prerelease'
+  tagPrefix:
+    description: 'Prefix GitHub tag names with a string of your choice'
+    required: false
+    default: ''
   versionFile:
     description: 'A filename where the full SEMVER and commit SHA will be written. Set to empty string if you do not want a version file to be created.'
     required: false

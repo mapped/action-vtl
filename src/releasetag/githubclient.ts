@@ -1,5 +1,6 @@
 import * as github from '@actions/github';
 import type {GitHub} from '@actions/github/lib/utils.js';
+import {ReleaseTagVersion} from './releasetagversion.js';
 
 export class GitHubClient {
   private octokit: InstanceType<typeof GitHub>;
@@ -12,25 +13,101 @@ export class GitHubClient {
     this.octokit = github.getOctokit(token);
   }
 
-  async getTags(): Promise<TagInfo[]> {
-    const res = await this.octokit.rest.repos.listTags({
-      owner: this.owner,
-      repo: this.repo,
-      per_page: 100, // There might be some custom tags. Take the maximum amount of items to avoid searching for the valid latest release through several pages
+  async getTags(options?: {
+    contains?: string | null;
+    stopFetchingOnFirstMatch?: boolean;
+  }): Promise<TagInfo[]> {
+    let tags: TagInfo[] = [];
+
+    console.log(
+      'Fetching tags...',
+      options?.contains ? `that contains: ${options.contains}` : '',
+      options?.stopFetchingOnFirstMatch ? 'and stop fetching on first match' : '',
+    );
+
+    const fetchTags = async (page: number) => {
+      return await this.octokit.rest.repos.listTags({
+        owner: this.owner,
+        repo: this.repo,
+        per_page: 100,
+        page,
+      });
+    };
+
+    let page = 1;
+    let res = await fetchTags(page);
+
+    while (res.data.length > 0) {
+      tags.push(...res.data);
+
+      if (
+        options?.stopFetchingOnFirstMatch &&
+        options?.contains &&
+        res.data.find(t => t.name.includes(options?.contains || ''))
+      ) {
+        console.log('Found tag that contains', options?.contains, '-- Tags fetching stopped.');
+        break;
+      }
+
+      page++;
+      res = await fetchTags(page);
+    }
+
+    tags = tags.filter(t => {
+      if (options?.contains) {
+        return t.name.includes(options.contains);
+      }
+
+      return true;
     });
 
-    return res.data;
+    tags = tags.sort((a, b) => {
+      const versionA = ReleaseTagVersion.parse(a.name.replace(options?.contains || '', ''));
+      const versionB = ReleaseTagVersion.parse(b.name.replace(options?.contains || '', ''));
+
+      if (versionA === null || versionB === null) {
+        return 0;
+      }
+
+      return versionA.isGreaterOrEqualTo(versionB) ? -1 : 1;
+    });
+
+    console.log('Found tags:', tags.map(t => t.name).join(', '));
+
+    return tags;
   }
 
-  async getCommits(startFromSha: string): Promise<CommitInfo[]> {
-    const res = await this.octokit.rest.repos.listCommits({
-      owner: this.owner,
-      repo: this.repo,
-      sha: startFromSha,
-      per_page: 100, // Do not search for the latest release commit forever
-    });
+  async getCommits(options: {startFromSha: string; stopAtSha?: string}): Promise<CommitInfo[]> {
+    const commits: CommitInfo[] = [];
 
-    return res.data;
+    console.log('Fetching commits until tag sha:', options.stopAtSha);
+
+    const fetchCommits = async (page: number) => {
+      return await this.octokit.rest.repos.listCommits({
+        owner: this.owner,
+        repo: this.repo,
+        sha: options.startFromSha,
+        page,
+        per_page: 100,
+      });
+    };
+
+    let page = 1;
+    let res = await fetchCommits(page);
+
+    while (res.data.length > 0) {
+      commits.push(...res.data);
+
+      if (options?.stopAtSha && res.data.find(c => c.sha === options.stopAtSha)) {
+        console.log('Found commit', options.stopAtSha, '-- Commits fetching stopped.');
+        break;
+      }
+
+      page++;
+      res = await fetchCommits(page);
+    }
+
+    return commits;
   }
 
   async createTag(tagName: string, comments: string, commitSha: string): Promise<void> {
