@@ -30963,246 +30963,8 @@ __nccwpck_require__.d(__webpack_exports__, {
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(5438);
-;// CONCATENATED MODULE: ./lib/releasetag/githubclient.js
-
-class GitHubClient {
-    constructor(token, owner, repo) {
-        this.owner = owner;
-        this.repo = repo;
-        this.octokit = github.getOctokit(token);
-    }
-    async getTags() {
-        const res = await this.octokit.rest.repos.listTags({
-            owner: this.owner,
-            repo: this.repo,
-            per_page: 100, // There might be some custom tags. Take the maximum amount of items to avoid searching for the valid latest release through several pages
-        });
-        return res.data;
-    }
-    async getCommits(startFromSha) {
-        const res = await this.octokit.rest.repos.listCommits({
-            owner: this.owner,
-            repo: this.repo,
-            sha: startFromSha,
-            per_page: 100, // Do not search for the latest release commit forever
-        });
-        return res.data;
-    }
-    async createTag(tagName, comments, commitSha) {
-        await this.octokit.rest.git.createTag({
-            owner: this.owner,
-            repo: this.repo,
-            tag: tagName,
-            message: comments,
-            object: commitSha,
-            type: 'commit',
-        });
-        await this.octokit.rest.git.createRef({
-            owner: this.owner,
-            repo: this.repo,
-            ref: `refs/tags/${tagName}`,
-            sha: commitSha,
-        });
-    }
-}
-//# sourceMappingURL=githubclient.js.map
-;// CONCATENATED MODULE: ./lib/releasetag/releasetagversion.js
-class ReleaseTagVersion {
-    constructor(major, minor, patch) {
-        this.major = major;
-        this.minor = minor;
-        this.patch = patch;
-    }
-    getMajor() {
-        return this.major;
-    }
-    getMinor() {
-        return this.minor;
-    }
-    getPatch() {
-        return this.patch;
-    }
-    toString() {
-        return `v${this.major}.${this.minor}.${this.patch}`;
-    }
-    isGreaterOrEqualTo(ver) {
-        if (this.major !== ver.major) {
-            return this.major > ver.major;
-        }
-        if (this.minor !== ver.minor) {
-            return this.minor > ver.minor;
-        }
-        if (this.patch !== ver.patch) {
-            return this.patch > ver.patch;
-        }
-        return true;
-    }
-    incrementMajor() {
-        this.major++;
-        this.minor = 0;
-        this.patch = 0;
-    }
-    incrementMinor() {
-        this.minor++;
-        this.patch = 0;
-    }
-    incrementPatch() {
-        this.patch++;
-    }
-    static parse(val) {
-        if (val === undefined || val === null) {
-            return null;
-        }
-        const res = ReleaseTagVersion.regexp.exec(val);
-        if (res === null) {
-            return null;
-        }
-        return new ReleaseTagVersion(parseInt(res[1]), parseInt(res[2]), parseInt(res[3]));
-    }
-}
-ReleaseTagVersion.regexp = /v?(\d+).(\d+).(\d+)/;
-//# sourceMappingURL=releasetagversion.js.map
-;// CONCATENATED MODULE: ./lib/releasetag/createreleasetag.js
-
-
-
-class CreateReleaseResult {
-    constructor(
-    // Not null if push was made in releases branch (usually main) or if someone decided to rerun the latest build. Otherwise set to null.
-    createdReleaseTag, 
-    // Represents previous version. Or the latest version if release was not created. Or initial version if there are no any valid releases yet.
-    previousReleaseTag, 
-    // Previous version commit sha. Null if previous version was not created yet (only in case when there are no valid release tags in repo).
-    previousReleaseTagCommitSha) {
-        this.createdReleaseTag = createdReleaseTag;
-        this.previousReleaseTag = previousReleaseTag;
-        this.previousReleaseTagCommitSha = previousReleaseTagCommitSha;
-    }
-    isPrerelease() {
-        return this.createdReleaseTag === null;
-    }
-    getBaseVersionOverride() {
-        return (this.createdReleaseTag ?? this.previousReleaseTag).toString();
-    }
-}
-async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, forcePatchIncrementIfNoChanges) {
-    const baseVersion = ReleaseTagVersion.parse(baseVersionStr);
-    if (baseVersion === null) {
-        throw Error(`Failed to parse base version '${baseVersionStr}'`);
-    }
-    const res = new CreateReleaseResult(null, baseVersion, null);
-    if (!token) {
-        core.info('GitHub token is missing. Skipping release creation...');
-        return res;
-    }
-    const gitHubClient = new GitHubClient(token, context.repo.owner, context.repo.repo);
-    const tags = await gitHubClient.getTags();
-    const commits = await gitHubClient.getCommits(context.sha);
-    // Find the previous tag
-    for (const tag of tags) {
-        const ver = ReleaseTagVersion.parse(tag.name);
-        // Skip releases with invalid format
-        if (ver === null) {
-            continue;
-        }
-        // Skip releases that are not related to the current commit.
-        // For example this build may run inside of a separate branch that is behind main branch.
-        // Or this build may be a rerun of some failed build several commit earlier in main branch.
-        if (!commits.find(x => x.sha === tag.commit.sha)) {
-            continue;
-        }
-        if (ver.isGreaterOrEqualTo(res.previousReleaseTag)) {
-            res.previousReleaseTag = ver;
-            res.previousReleaseTagCommitSha = tag.commit.sha;
-        }
-    }
-    // Do not create release if developer intentionally switched this feature off
-    if (!releasesBranch) {
-        return res;
-    }
-    const branchRegExp = new RegExp(`refs/heads/${releasesBranch}`);
-    // Tagging is allowed only for one selected branch (usually main branch)
-    if (!branchRegExp.test(context.ref)) {
-        return res;
-    }
-    res.createdReleaseTag = ReleaseTagVersion.parse(res.previousReleaseTag.toString());
-    if (res.createdReleaseTag == null) {
-        throw Error(`Failed to clone previous version '${res.previousReleaseTag.toString()}'`);
-    }
-    let releaseComments = '';
-    // Do not increment version if there is no any valid release tag yet.
-    if (res.previousReleaseTagCommitSha !== null) {
-        let incrementMajor = false;
-        let incrementMinor = false;
-        let incrementPatch = false;
-        let reachedLatestReleaseCommit = false;
-        const semanticCommitRegExp = /(feat|fix|chore|refactor|style|test|docs)(\(#(\w{0,15})\))?(!)?:\s?(.*)/i;
-        // Choose the most significant change among all commits since previous release
-        for (const commit of commits) {
-            if (commit.sha === res.previousReleaseTagCommitSha) {
-                reachedLatestReleaseCommit = true;
-                break;
-            }
-            const message = commit.commit.message;
-            const matches = semanticCommitRegExp.exec(message);
-            if (message) {
-                releaseComments += `\n${message}`;
-            }
-            if (matches === null) {
-                // Always increment patch if developer does not write messages in "semantic commits" manner (https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716)
-                incrementPatch = true;
-                continue;
-            }
-            // Breaking change rules described here https://www.conventionalcommits.org/en/v1.0.0/
-            const breakingChangeSign = matches[4];
-            if (breakingChangeSign || message.includes('BREAKING CHANGE:')) {
-                incrementMajor = true;
-                continue;
-            }
-            const commitType = matches[1];
-            if (commitType === 'feat') {
-                incrementMinor = true;
-                continue;
-            }
-            incrementPatch = true;
-        }
-        if (!reachedLatestReleaseCommit) {
-            throw Error(`Failed to reach the latest release tag '${res.previousReleaseTag.toString()}' (${res.previousReleaseTagCommitSha}) inside of the '${releasesBranch}' branch.`);
-        }
-        if (incrementMajor) {
-            res.createdReleaseTag.incrementMajor();
-        }
-        else if (incrementMinor) {
-            res.createdReleaseTag.incrementMinor();
-        }
-        else if (incrementPatch || forcePatchIncrementIfNoChanges) {
-            res.createdReleaseTag.incrementPatch();
-        }
-        else {
-            core.info('Did not find any new commit since the latest release tag. Seems that release is already created.');
-            return res;
-        }
-    }
-    const nextTagName = res.createdReleaseTag.toString();
-    core.info(`Creating a tag '${nextTagName}'...`);
-    try {
-        await gitHubClient.createTag(nextTagName, releaseComments, context.sha);
-        /* eslint-disable @typescript-eslint/no-explicit-any */
-    }
-    catch (error) {
-        if (error && error.message && error.message.includes('Reference already exists')) {
-            // We should ignore this error and continue.
-            // It happens when several parallel jobs try to create the same release tag.
-            core.warning(`GitHub API says that tag '${nextTagName}' already exists. Ignoring this error...`);
-        }
-        else {
-            throw new Error(`Failed to create a tag ${nextTagName}: ${JSON.stringify(error)}`);
-        }
-    }
-    core.info(`Created a tag '${nextTagName}'`);
-    return res;
-}
-//# sourceMappingURL=createreleasetag.js.map
+// EXTERNAL MODULE: external "fs"
+var external_fs_ = __nccwpck_require__(7147);
 ;// CONCATENATED MODULE: ./lib/version.js
 const SEMVER_REGEX = /(?<=^v?|\sv?)(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*))?(?:\+([\da-z-]+(?:\.[\da-z-]+)*))?(?=$|\s)/i;
 const NUMERIC_REGEX = /^\d+$/;
@@ -31554,8 +31316,300 @@ async function GetOCI(version, context) {
     return oci;
 }
 //# sourceMappingURL=oci.js.map
-// EXTERNAL MODULE: external "fs"
-var external_fs_ = __nccwpck_require__(7147);
+;// CONCATENATED MODULE: ./lib/releasetag/releasetagversion.js
+class ReleaseTagVersion {
+    constructor(major, minor, patch) {
+        this.major = major;
+        this.minor = minor;
+        this.patch = patch;
+    }
+    getMajor() {
+        return this.major;
+    }
+    getMinor() {
+        return this.minor;
+    }
+    getPatch() {
+        return this.patch;
+    }
+    toString() {
+        return `v${this.major}.${this.minor}.${this.patch}`;
+    }
+    isGreaterOrEqualTo(ver) {
+        if (this.major !== ver.major) {
+            return this.major > ver.major;
+        }
+        if (this.minor !== ver.minor) {
+            return this.minor > ver.minor;
+        }
+        if (this.patch !== ver.patch) {
+            return this.patch > ver.patch;
+        }
+        return true;
+    }
+    incrementMajor() {
+        this.major++;
+        this.minor = 0;
+        this.patch = 0;
+    }
+    incrementMinor() {
+        this.minor++;
+        this.patch = 0;
+    }
+    incrementPatch() {
+        this.patch++;
+    }
+    static parse(val) {
+        if (val === undefined || val === null) {
+            return null;
+        }
+        const res = ReleaseTagVersion.regexp.exec(val);
+        if (res === null) {
+            return null;
+        }
+        return new ReleaseTagVersion(parseInt(res[1]), parseInt(res[2]), parseInt(res[3]));
+    }
+}
+ReleaseTagVersion.regexp = /v?(\d+).(\d+).(\d+)/;
+//# sourceMappingURL=releasetagversion.js.map
+;// CONCATENATED MODULE: ./lib/releasetag/githubclient.js
+
+
+class GitHubClient {
+    constructor(token, owner, repo) {
+        this.owner = owner;
+        this.repo = repo;
+        this.octokit = github.getOctokit(token);
+    }
+    async getTags(options) {
+        let tags = [];
+        console.log('Fetching tags...', options?.contains ? `that contains: ${options.contains}` : '', options?.stopFetchingOnFirstMatch ? 'and stop fetching on first match' : '');
+        const fetchTags = async (page) => {
+            return await this.octokit.rest.repos.listTags({
+                owner: this.owner,
+                repo: this.repo,
+                per_page: 100,
+                page,
+            });
+        };
+        let page = 1;
+        let res = await fetchTags(page);
+        while (res.data.length > 0) {
+            tags.push(...res.data);
+            if (options?.stopFetchingOnFirstMatch &&
+                options?.contains &&
+                res.data.find(t => t.name.includes(options?.contains || ''))) {
+                console.log('Found tag that contains', options?.contains, '-- Tags fetching stopped.');
+                break;
+            }
+            page++;
+            res = await fetchTags(page);
+        }
+        tags = tags.filter(t => {
+            if (options?.contains) {
+                return t.name.includes(options.contains);
+            }
+            return true;
+        });
+        tags = tags.sort((a, b) => {
+            const versionA = ReleaseTagVersion.parse(a.name.replace(options?.contains || '', ''));
+            const versionB = ReleaseTagVersion.parse(b.name.replace(options?.contains || '', ''));
+            if (versionA === null || versionB === null) {
+                return 0;
+            }
+            return versionA.isGreaterOrEqualTo(versionB) ? -1 : 1;
+        });
+        console.log('Found tags:', tags.map(t => t.name).join(', '));
+        return tags;
+    }
+    async getCommits(options) {
+        const commits = [];
+        console.log('Fetching commits until tag sha:', options.stopAtSha);
+        const fetchCommits = async (page) => {
+            return await this.octokit.rest.repos.listCommits({
+                owner: this.owner,
+                repo: this.repo,
+                sha: options.startFromSha,
+                page,
+                per_page: 100,
+            });
+        };
+        let page = 1;
+        let res = await fetchCommits(page);
+        while (res.data.length > 0) {
+            commits.push(...res.data);
+            if (options?.stopAtSha && res.data.find(c => c.sha === options.stopAtSha)) {
+                console.log('Found commit', options.stopAtSha, '-- Commits fetching stopped.');
+                break;
+            }
+            page++;
+            res = await fetchCommits(page);
+        }
+        return commits;
+    }
+    async createTag(tagName, comments, commitSha) {
+        await this.octokit.rest.git.createTag({
+            owner: this.owner,
+            repo: this.repo,
+            tag: tagName,
+            message: comments,
+            object: commitSha,
+            type: 'commit',
+        });
+        await this.octokit.rest.git.createRef({
+            owner: this.owner,
+            repo: this.repo,
+            ref: `refs/tags/${tagName}`,
+            sha: commitSha,
+        });
+    }
+}
+//# sourceMappingURL=githubclient.js.map
+;// CONCATENATED MODULE: ./lib/releasetag/createreleasetag.js
+
+
+
+class CreateReleaseResult {
+    constructor(
+    // Not null if push was made in releases branch (usually main) or if someone decided to rerun the latest build. Otherwise set to null.
+    createdReleaseTag, 
+    // Represents previous version. Or the latest version if release was not created. Or initial version if there are no any valid releases yet.
+    previousReleaseTag, 
+    // Previous version commit sha. Null if previous version was not created yet (only in case when there are no valid release tags in repo).
+    previousReleaseTagCommitSha) {
+        this.createdReleaseTag = createdReleaseTag;
+        this.previousReleaseTag = previousReleaseTag;
+        this.previousReleaseTagCommitSha = previousReleaseTagCommitSha;
+    }
+    isPrerelease() {
+        return this.createdReleaseTag === null;
+    }
+    getBaseVersionOverride() {
+        return (this.createdReleaseTag ?? this.previousReleaseTag).toString();
+    }
+}
+async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, forcePatchIncrementIfNoChanges, tagPrefix = '') {
+    const baseVersion = ReleaseTagVersion.parse(baseVersionStr);
+    if (baseVersion === null) {
+        throw Error(`Failed to parse base version '${baseVersionStr}'`);
+    }
+    const res = new CreateReleaseResult(null, baseVersion, null);
+    if (!token) {
+        core.info('GitHub token is missing. Skipping release creation...');
+        return res;
+    }
+    const gitHubClient = new GitHubClient(token, context.repo.owner, context.repo.repo);
+    const tags = await gitHubClient.getTags({ contains: tagPrefix, stopFetchingOnFirstMatch: true });
+    const commits = await gitHubClient.getCommits({
+        startFromSha: context.sha,
+        stopAtSha: tags?.[0]?.commit?.sha,
+    });
+    // Find the previous tag
+    for (const tag of tags) {
+        const tagName = tag.name.replace(tagPrefix, '');
+        const ver = ReleaseTagVersion.parse(tagName);
+        // Skip releases with invalid format
+        if (ver === null) {
+            continue;
+        }
+        // Skip releases that are not related to the current commit.
+        // For example this build may run inside of a separate branch that is behind main branch.
+        // Or this build may be a rerun of some failed build several commit earlier in main branch.
+        if (!commits.find(x => x.sha === tag.commit.sha)) {
+            continue;
+        }
+        if (ver.isGreaterOrEqualTo(res.previousReleaseTag)) {
+            res.previousReleaseTag = ver;
+            res.previousReleaseTagCommitSha = tag.commit.sha;
+        }
+    }
+    // Do not create release if developer intentionally switched this feature off
+    if (!releasesBranch) {
+        return res;
+    }
+    const branchRegExp = new RegExp(`refs/heads/${releasesBranch}`);
+    // Tagging is allowed only for one selected branch (usually main branch)
+    if (!branchRegExp.test(context.ref)) {
+        return res;
+    }
+    res.createdReleaseTag = ReleaseTagVersion.parse(res.previousReleaseTag.toString());
+    if (res.createdReleaseTag == null) {
+        throw Error(`Failed to clone previous version '${res.previousReleaseTag.toString()}'`);
+    }
+    let releaseComments = '';
+    // Do not increment version if there is no any valid release tag yet.
+    if (res.previousReleaseTagCommitSha !== null) {
+        let incrementMajor = false;
+        let incrementMinor = false;
+        let incrementPatch = false;
+        let reachedLatestReleaseCommit = false;
+        const semanticCommitRegExp = /(feat|fix|chore|refactor|style|test|docs)(\(#(\w{0,15})\))?(!)?:\s?(.*)/i;
+        // Choose the most significant change among all commits since previous release
+        for (const commit of commits) {
+            if (commit.sha === res.previousReleaseTagCommitSha) {
+                reachedLatestReleaseCommit = true;
+                break;
+            }
+            const message = commit.commit.message;
+            const matches = semanticCommitRegExp.exec(message);
+            if (message) {
+                releaseComments += `\n${message}`;
+            }
+            if (matches === null) {
+                // Always increment patch if developer does not write messages in "semantic commits" manner (https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716)
+                incrementPatch = true;
+                continue;
+            }
+            // Breaking change rules described here https://www.conventionalcommits.org/en/v1.0.0/
+            const breakingChangeSign = matches[4];
+            if (breakingChangeSign || message.includes('BREAKING CHANGE:')) {
+                incrementMajor = true;
+                continue;
+            }
+            const commitType = matches[1];
+            if (commitType === 'feat') {
+                incrementMinor = true;
+                continue;
+            }
+            incrementPatch = true;
+        }
+        if (!reachedLatestReleaseCommit) {
+            throw Error(`Failed to reach the latest release tag '${res.previousReleaseTag.toString()}' (${res.previousReleaseTagCommitSha}) inside of the '${releasesBranch}' branch.`);
+        }
+        if (incrementMajor) {
+            res.createdReleaseTag.incrementMajor();
+        }
+        else if (incrementMinor) {
+            res.createdReleaseTag.incrementMinor();
+        }
+        else if (incrementPatch || forcePatchIncrementIfNoChanges) {
+            res.createdReleaseTag.incrementPatch();
+        }
+        else {
+            core.info('Did not find any new commit since the latest release tag. Seems that release is already created.');
+            return res;
+        }
+    }
+    const nextTagName = tagPrefix + res.createdReleaseTag.toString();
+    core.info(`Creating a tag '${nextTagName}'...`);
+    try {
+        await gitHubClient.createTag(nextTagName, releaseComments, context.sha);
+        /* eslint-disable @typescript-eslint/no-explicit-any */
+    }
+    catch (error) {
+        if (error && error.message && error.message.includes('Reference already exists')) {
+            // We should ignore this error and continue.
+            // It happens when several parallel jobs try to create the same release tag.
+            core.warning(`GitHub API says that tag '${nextTagName}' already exists. Ignoring this error...`);
+        }
+        else {
+            throw new Error(`Failed to create a tag ${nextTagName}: ${JSON.stringify(error)}`);
+        }
+    }
+    core.info(`Created a tag '${nextTagName}'`);
+    return res;
+}
+//# sourceMappingURL=createreleasetag.js.map
 ;// CONCATENATED MODULE: ./lib/main.js
 
 
@@ -31604,6 +31658,8 @@ async function run() {
     }
     // Get the pre-release prefix
     const preReleasePrefix = core.getInput('prereleasePrefix') ?? '';
+    // Get the tag prefix
+    const tagPrefix = core.getInput('tagPrefix') ?? '';
     // Get the docker image name prefix
     const dockerImage = core.getInput('dockerImage') ?? '';
     // Get the docker platform label suffix
@@ -31615,7 +31671,7 @@ async function run() {
     // Get a value indicating whether to increment patch if there is no changes detected since previous release
     const forcePatchIncrementIfNoChanges = core.getInput('forcePatchIncrementIfNoChanges')?.trim()?.toLowerCase() === 'true';
     // Create a release tag
-    const createReleaseTagRes = await CreateReleaseTag(github.context, gitHubToken, releasesBranch, baseVer, forcePatchIncrementIfNoChanges);
+    const createReleaseTagRes = await CreateReleaseTag(github.context, gitHubToken, releasesBranch, baseVer, forcePatchIncrementIfNoChanges, tagPrefix);
     // Process the input
     const verInfo = await SemVer(createReleaseTagRes.getBaseVersionOverride(), createReleaseTagRes.isPrerelease(), branchMappings, preReleasePrefix, github.context);
     const ociInfo = await GetOCI(verInfo, github.context);
