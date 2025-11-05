@@ -31419,7 +31419,6 @@ class GitHubClient {
             }
             return versionA.isGreaterOrEqualTo(versionB) ? -1 : 1;
         });
-        console.log('Found tags:', tags.map(t => t.name).join(', '));
         return tags;
     }
     async getCommits(options) {
