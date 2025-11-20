@@ -2,7 +2,7 @@
   <a href="https://github.com/mapped/action-version/actions"><img alt="action-semver status" src="https://github.com/mapped/action-version/workflows/build-test/badge.svg"></a>
 </p>
 
-# GitHub Action for Consistent Versioning, Taging, and Labeleling of Builds
+# GitHub Action for Consistent Versioning, Tagging, and Labeling of Builds
 
 This GitHub Action creates consistent versioning, tagging, and labels for use in package/assembly versions and docker images.
 
