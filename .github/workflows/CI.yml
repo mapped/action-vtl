@@ -2,7 +2,7 @@ name: CI
 on:
   push:
     branches-ignore:
-      - 'renovate/3rd-party**' # Do not build 3rd party package updates automatically to avoid some hacked package stealing all our secrets https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+      - "renovate/3rd-party**" # Do not build 3rd party package updates automatically to avoid some hacked package stealing all our secrets https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
 
 permissions:
   contents: write
@@ -11,7 +11,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build
         run: |
@@ -36,7 +36,7 @@ jobs:
 
           echo "branch=$branch"
           echo "branch=$branch" >> $GITHUB_OUTPUT
-          
+
       - name: Publish into release branch
         uses: s0/git-publish-subdir-action@v2.6.0
         env:
