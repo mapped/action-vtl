@@ -110,7 +110,7 @@ export async function SemVer(
   ver.semVerNoMetaPyPA = ver.semVer;
   if (ver.preRelease.length > 0) {
     ver.semVer += `-${ver.preRelease}`;
-    ver.semVerNoMetaPyPA += `+${ver.preRelease}`;
+    ver.semVerNoMetaPyPA += `-${ver.preRelease}`.replace('prerelease', 'rc');
   }
   ver.semVerNoMeta = ver.semVer;
   if (ver.metadata.length > 0) {
