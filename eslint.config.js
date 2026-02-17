@@ -21,7 +21,7 @@ export default [
       parserOptions: {
         ecmaVersion: 2018,
         sourceType: 'module',
-        project: './tsconfig.json',
+        project: ['./tsconfig.json', './test/tsconfig.json'],
       },
     },
     settings: {
@@ -40,6 +40,17 @@ export default [
       'import/no-namespace': 'off',
       'no-unused-vars': 'off',
       'sort-imports': 'off',
+      'import/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
+          'newlines-between': 'never',
+          alphabetize: {
+            order: 'asc',
+            caseInsensitive: true,
+          },
+        },
+      ],
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/explicit-member-accessibility': ['error', {accessibility: 'no-public'}],
       '@typescript-eslint/no-require-imports': 'error',

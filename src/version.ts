@@ -1,4 +1,6 @@
-import type {Context} from '@actions/github/lib/context.js';
+import type {context} from '@actions/github';
+
+type Context = typeof context;
 
 export const SEMVER_REGEX =
   /(?<=^v?|\sv?)(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*))?(?:\+([\da-z-]+(?:\.[\da-z-]+)*))?(?=$|\s)/i;

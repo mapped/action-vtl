@@ -1,8 +1,9 @@
 import * as github from '@actions/github';
 import {SEMVER_REGEX, type Version, compareSemvers} from './version.js';
-import type {components} from '@octokit/openapi-types';
-import type {Context} from '@actions/github/lib/context.js';
 import type {KnownPayload} from './oci.js';
+import type {components} from '@octokit/openapi-types';
+
+type Context = typeof github.context;
 
 type ReposListReleasesResponseData = components['schemas']['release'];
 // NOTE: This works for the above as well, but following the post refactor chaos of
