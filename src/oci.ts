@@ -1,6 +1,8 @@
-import type {Context} from '@actions/github/lib/context.js';
 import type {Version} from './version.js';
+import type {context} from '@actions/github';
 import type {WebhookEventMap} from '@octokit/webhooks-types';
+
+type Context = typeof context;
 
 // Payload types we use
 // TODO: Schedule?

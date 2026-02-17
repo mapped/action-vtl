@@ -1,10 +1,10 @@
+import fs from 'fs';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import fs from 'fs';
-import { GetDockerInfo } from './docker.js';
-import { GetOCI } from './oci.js';
-import { CreateReleaseTag } from './releasetag/createreleasetag.js';
-import { SemVer } from './version.js';
+import {GetDockerInfo} from './docker.js';
+import {GetOCI} from './oci.js';
+import {CreateReleaseTag} from './releasetag/createreleasetag.js';
+import {SemVer} from './version.js';
 
 function isObject<T>(obj: T): boolean {
   return obj === Object(obj);
@@ -39,7 +39,7 @@ export async function run(): Promise<void> {
   core.debug(JSON.stringify(github.context));
 
   // Get the base version
-  const baseVer = core.getInput('baseVersion', { required: true });
+  const baseVer = core.getInput('baseVersion', {required: true});
 
   // Get the branch mappings
   const branchMappings = new Map<string, string>();
@@ -114,7 +114,7 @@ export async function run(): Promise<void> {
   const verFile = core.getInput('versionFile');
 
   if (verFile) {
-    fs.writeFile(verFile, verInfo.semVer, { encoding: 'utf8' }, function (err) {
+    fs.writeFile(verFile, verInfo.semVer, {encoding: 'utf8'}, function (err) {
       if (err) {
         throw err;
       }
