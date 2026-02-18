@@ -1,9 +1,12 @@
+import {test, expect, vi, beforeEach} from 'vitest';
 import {CreateReleaseTag} from '../src/releasetag/createreleasetag';
-import {Context} from '@actions/github/lib/context';
-import {CommitInfo, TagInfo} from '../src/releasetag/githubclient';
+import type {CommitInfo, TagInfo} from '../src/releasetag/githubclient';
+import type {context} from '@actions/github';
+
+type Context = typeof context;
 
 function generateContext(branch = 'main'): Context {
-  let ctx: Context = {
+  const ctx: Context = {
     action: 'mapped/action-vtl',
     eventName: 'push',
     sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
@@ -13,6 +16,7 @@ function generateContext(branch = 'main'): Context {
     job: 'somejob',
     runNumber: 17,
     runId: 262999999,
+    runAttempt: 1,
     apiUrl: 'https://test.test.test',
     serverUrl: 'https://test.test.test',
     graphqlUrl: 'https://test.test.test',
@@ -44,36 +48,38 @@ let commits = [
   {message: 'fix: Fix exception during startup', sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf'},
 ];
 
-const createTagMock = jest.fn();
+const createTagMock = vi.fn();
 
-jest.mock('../src/releasetag/githubclient', () => {
+vi.mock('../src/releasetag/githubclient', () => {
   return {
-    GitHubClient: function () {
-      return {
-        async getTags(): Promise<TagInfo[]> {
-          return tags.map(x => {
-            return {
-              name: x.name,
-              commit: {
-                sha: x.sha,
-              },
-            };
-          });
-        },
-        async getCommits(): Promise<CommitInfo[]> {
-          return commits.map(x => {
-            return {
-              commit: {
-                message: x.message,
-              },
+    GitHubClient: class {
+      async getTags(): Promise<TagInfo[]> {
+        return tags.map(x => {
+          return {
+            name: x.name,
+            commit: {
               sha: x.sha,
-            };
-          });
-        },
-        createTag: createTagMock,
-      };
+            },
+          };
+        });
+      }
+      async getCommits(): Promise<CommitInfo[]> {
+        return commits.map(x => {
+          return {
+            commit: {
+              message: x.message,
+            },
+            sha: x.sha,
+          };
+        });
+      }
+      createTag = createTagMock;
     },
   };
+});
+
+beforeEach(() => {
+  createTagMock.mockClear();
 });
 
 test('create first release', async () => {

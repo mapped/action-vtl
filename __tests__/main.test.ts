@@ -1,6 +1,9 @@
-import {SemVer, compareSemvers} from '../src/version';
+import {test, expect} from 'vitest';
 import {GetDockerInfo} from '../src/docker';
-import {Context} from '@actions/github/lib/context';
+import {SemVer, compareSemvers} from '../src/version';
+import type {context} from '@actions/github';
+
+type Context = typeof context;
 
 // Some generic good values
 const goodBaseVer = [
@@ -28,7 +31,7 @@ const goodRefAndEvent = [
 const goodSha8 = goodSha.substring(0, 8);
 
 function generateContext(runNoIdx: number, refIdx: number): Context {
-  let ctx: Context = {
+  const ctx: Context = {
     action: 'mapped/action-vtl',
     eventName: goodRefAndEvent[refIdx].event,
     sha: goodSha,
@@ -38,6 +41,7 @@ function generateContext(runNoIdx: number, refIdx: number): Context {
     job: 'somejob',
     runNumber: goodRunNo[runNoIdx],
     runId: 262999999,
+    runAttempt: 1,
     apiUrl: 'https://test.test.test',
     serverUrl: 'https://test.test.test',
     graphqlUrl: 'https://test.test.test',
@@ -81,7 +85,7 @@ test('bad tag semver', async () => {
     'refs/tags/v2.4a.6',
   ];
   for (const input of inputs) {
-    let ctx = generateContext(0, 5);
+    const ctx = generateContext(0, 5);
     ctx.ref = input;
     const expected = `Tag of "${input.split('/').pop()}" is not a valid SEMVER`;
     await expect(SemVer(goodBaseVer[0], true, goodMappings, goodPrefix[0], ctx)).rejects.toThrow(
@@ -91,18 +95,18 @@ test('bad tag semver', async () => {
 });
 
 test('push on mapped branch', async () => {
-  let expSemVerNoMeta = goodBaseVer[0] + '-' + goodPrefix[0] + '.' + goodRunNo[0];
+  const expSemVerNoMeta = `${goodBaseVer[0]}-${goodPrefix[0]}.${goodRunNo[0]}`;
   await expect(
     SemVer(goodBaseVer[0], true, goodMappings, goodPrefix[0], generateContext(0, 0)),
   ).resolves.toMatchObject({
     major: 1,
     minor: 2,
     patch: 3,
-    preRelease: goodPrefix[0] + '.' + goodRunNo[0],
+    preRelease: `${goodPrefix[0]}.${goodRunNo[0]}`,
     metadata: expect.stringContaining(goodSha8),
     buildNumber: goodRunNo[0].toString(),
     tag: 'edge',
-    semVer: expect.stringMatching(new RegExp(expSemVerNoMeta + '\\+.*\\.sha-' + goodSha8)),
+    semVer: expect.stringMatching(new RegExp(`${expSemVerNoMeta}\\+.*\\.sha-${goodSha8}`)),
     semVerNoMeta: expSemVerNoMeta,
   });
 });
@@ -119,24 +123,24 @@ test('push without prerelease', async () => {
 });
 
 test('push on unmapped branch', async () => {
-  let expSemVerNoMeta = '9.6.1-' + goodRunNo[1];
+  const expSemVerNoMeta = `9.6.1-${goodRunNo[1]}`;
   await expect(
     SemVer(goodBaseVer[3], true, goodMappings, goodPrefix[1], generateContext(1, 2)),
   ).resolves.toMatchObject({
     major: 9,
     minor: 6,
     patch: 1,
-    preRelease: '' + goodRunNo[1],
+    preRelease: `${goodRunNo[1]}`,
     metadata: expect.stringContaining(goodSha8),
     buildNumber: goodRunNo[1].toString(),
     tag: goodRefAndEvent[2].ref.split('/').pop(),
-    semVer: expect.stringMatching(new RegExp(expSemVerNoMeta + '\\+.*\\.sha-' + goodSha8)),
+    semVer: expect.stringMatching(new RegExp(`${expSemVerNoMeta}\\+.*\\.sha-${goodSha8}`)),
     semVerNoMeta: expSemVerNoMeta,
   });
 });
 
 test('tag 1', async () => {
-  let expSemVerNoMeta = '1.3.5';
+  const expSemVerNoMeta = '1.3.5';
   await expect(
     SemVer(goodBaseVer[0], true, goodMappings, goodPrefix[1], generateContext(0, 5)),
   ).resolves.toMatchObject({
@@ -147,13 +151,13 @@ test('tag 1', async () => {
     metadata: expect.stringContaining(goodSha8),
     buildNumber: goodRunNo[0].toString(),
     tag: goodRefAndEvent[5].ref.split('/').pop(),
-    semVer: expect.stringMatching(new RegExp(expSemVerNoMeta + '\\+.*\\.sha-' + goodSha8)),
+    semVer: expect.stringMatching(new RegExp(`${expSemVerNoMeta}\\+.*\\.sha-${goodSha8}`)),
     semVerNoMeta: expSemVerNoMeta,
   });
 });
 
 test('tag 2', async () => {
-  let expSemVerNoMeta = '2.4.6-beta.2';
+  const expSemVerNoMeta = '2.4.6-beta.2';
   await expect(
     SemVer(goodBaseVer[2], true, goodMappings, goodPrefix[0], generateContext(1, 6)),
   ).resolves.toMatchObject({
@@ -164,24 +168,24 @@ test('tag 2', async () => {
     metadata: expect.stringContaining(goodSha8),
     buildNumber: goodRunNo[1].toString(),
     tag: goodRefAndEvent[6].ref.split('/').pop(),
-    semVer: expect.stringMatching(new RegExp(expSemVerNoMeta + '\\+.*\\.sha-' + goodSha8)),
+    semVer: expect.stringMatching(new RegExp(`${expSemVerNoMeta}\\+.*\\.sha-${goodSha8}`)),
     semVerNoMeta: expSemVerNoMeta,
   });
 });
 
 test('pr', async () => {
-  let expSemVerNoMeta = '0.1.0-' + goodPrefix[2] + '.' + goodRunNo[1];
+  const expSemVerNoMeta = `0.1.0-${goodPrefix[2]}.${goodRunNo[1]}`;
   await expect(
     SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], generateContext(1, 1)),
   ).resolves.toMatchObject({
     major: 0,
     minor: 1,
     patch: 0,
-    preRelease: goodPrefix[2] + '.' + goodRunNo[1],
+    preRelease: `${goodPrefix[2]}.${goodRunNo[1]}`,
     metadata: expect.stringContaining(goodSha8),
     buildNumber: goodRunNo[1].toString(),
     tag: 'pr-37',
-    semVer: expect.stringMatching(new RegExp(expSemVerNoMeta + '\\+.*\\.sha-' + goodSha8)),
+    semVer: expect.stringMatching(new RegExp(`${expSemVerNoMeta}\\+.*\\.sha-${goodSha8}`)),
     semVerNoMeta: expSemVerNoMeta,
   });
 });
@@ -234,8 +238,8 @@ test('compareSemvers with pre-release and metadata', async () => {
 });
 
 test('docker info - push', async () => {
-  let ctx = generateContext(1, 0);
-  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  const ctx = generateContext(1, 0);
+  const verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, '', ctx, '')).resolves.toMatchObject({
     tags: ['test/container:edge', `test/container:sha-${goodSha8}`].join(','),
     push: 'true',
@@ -244,8 +248,8 @@ test('docker info - push', async () => {
 });
 
 test('docker info - push w/platform', async () => {
-  let ctx = generateContext(1, 0);
-  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  const ctx = generateContext(1, 0);
+  const verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, 'platx', ctx, '')).resolves.toMatchObject({
     tags: ['test/container:edge-platx', `test/container:sha-${goodSha8}-platx`].join(','),
     push: 'true',
@@ -254,8 +258,8 @@ test('docker info - push w/platform', async () => {
 });
 
 test('docker info - push for branch with several slashes inside', async () => {
-  let ctx = generateContext(1, 8);
-  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  const ctx = generateContext(1, 8);
+  const verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, '', ctx, '')).resolves.toMatchObject({
     tags: ['test/container:dependabot-sub1-sub2-sub3', `test/container:sha-${goodSha8}`].join(','),
     push: 'true',
@@ -264,8 +268,8 @@ test('docker info - push for branch with several slashes inside', async () => {
 });
 
 test('docker info - push for branch with several slashes inside w/platform', async () => {
-  let ctx = generateContext(1, 8);
-  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  const ctx = generateContext(1, 8);
+  const verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, 'platx', ctx, '')).resolves.toMatchObject({
     tags: [
       'test/container:dependabot-sub1-sub2-sub3-platx',
@@ -277,8 +281,8 @@ test('docker info - push for branch with several slashes inside w/platform', asy
 });
 
 test('docker info - tag', async () => {
-  let ctx = generateContext(1, 5);
-  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  const ctx = generateContext(1, 5);
+  const verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, '', ctx, '')).resolves.toMatchObject({
     tags: ['test/container:1.3.5', 'test/container:1', 'test/container:1.3'].join(','),
     push: 'true',
@@ -287,8 +291,8 @@ test('docker info - tag', async () => {
 });
 
 test('docker info - tag w/platform', async () => {
-  let ctx = generateContext(1, 5);
-  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  const ctx = generateContext(1, 5);
+  const verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, 'platx', ctx, '')).resolves.toMatchObject({
     tags: ['test/container:1.3.5-platx', 'test/container:1-platx', 'test/container:1.3-platx'].join(
       ',',
@@ -299,8 +303,8 @@ test('docker info - tag w/platform', async () => {
 });
 
 test('docker info - pr', async () => {
-  let ctx = generateContext(1, 1);
-  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  const ctx = generateContext(1, 1);
+  const verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, '', ctx, '')).resolves.toMatchObject({
     tags: 'test/container:pr-37',
     push: 'false',
@@ -309,23 +313,11 @@ test('docker info - pr', async () => {
 });
 
 test('docker info - pr w/platform', async () => {
-  let ctx = generateContext(1, 1);
-  let verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
+  const ctx = generateContext(1, 1);
+  const verInfo = await SemVer(goodBaseVer[1], true, goodMappings, goodPrefix[2], ctx);
   await expect(GetDockerInfo('test/container', verInfo, 'platx', ctx, '')).resolves.toMatchObject({
     tags: 'test/container:pr-37-platx',
     push: 'false',
     dtag: 'test/container:pr-37-platx',
   });
 });
-
-// Try to call the action how GitHub would
-/*
-test('test runs', () => {
-  process.env['INPUT_BASEVERSION'] = '1.2.3'
-  const ip = path.join(__dirname, '..', 'lib', 'main.js')
-  const options: cp.ExecSyncOptions = {
-    env: process.env
-  }
-  console.log(cp.execSync(`node ${ip}`, options).toString())
-})
-*/
