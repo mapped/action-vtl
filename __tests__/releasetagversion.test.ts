@@ -1,3 +1,4 @@
+import {test, expect} from 'vitest';
 import {ReleaseTagVersion as Ver} from '../src/releasetag/releasetagversion';
 
 test('increment version', async () => {

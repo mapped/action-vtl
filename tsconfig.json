@@ -2,18 +2,18 @@
   "extends": "@octokit/tsconfig",
   "compilerOptions": {
     "lib": ["DOM", "ESNext"],
-    "target": "ES2020",                       /* Specify ECMAScript target version */
-    "module": "Node16",                       /* Specify module code generation */
-    "outDir": "./lib",                        /* Redirect output structure to the directory. */
-    "noImplicitReturns": true,                /* Report error when not all code paths in function return a value. */
-    "noFallthroughCasesInSwitch": true,       /* Report errors for fallthrough cases in switch statement. */
-    "noUnusedLocals": true,                   /* Report errors on unused locals. */
-    "pretty": true,                           /* Enable pretty output. */
-    "strict": true,                           /* Enable all strict type-checking options. */
-    "sourceMap": true,                        /* Generates corresponding '.map' file. */
-    "noImplicitAny": true,                    /* Raise error on expressions and declarations with an implied 'any' type. */
-    "esModuleInterop": true,                  /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */
-    "moduleResolution": "Node16",             /* Specify module resolution strategy */
+    "target": "ES2020" /* Specify ECMAScript target version */,
+    "module": "Node16" /* Specify module code generation */,
+    "outDir": "./lib" /* Redirect output structure to the directory. */,
+    "noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
+    "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
+    "noUnusedLocals": true /* Report errors on unused locals. */,
+    "pretty": true /* Enable pretty output. */,
+    "strict": true /* Enable all strict type-checking options. */,
+    "sourceMap": true /* Generates corresponding '.map' file. */,
+    "noImplicitAny": true /* Raise error on expressions and declarations with an implied 'any' type. */,
+    "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,
+    "moduleResolution": "Node16" /* Specify module resolution strategy */
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.test.ts"]

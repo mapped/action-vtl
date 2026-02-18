@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "allowImportingTsExtensions": false,
+    "customConditions": ["types"]
+  },
+  "include": ["../src/**/*", "**/*.ts", "../*.config.ts"],
+  "exclude": ["types/*.ts"]
+}

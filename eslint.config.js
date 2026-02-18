@@ -1,56 +1,28 @@
-import github from 'eslint-plugin-github';
-import vitestPlugin from 'eslint-plugin-vitest';
-import importPlugin from 'eslint-plugin-import';
+import vitestPlugin from '@vitest/eslint-plugin';
 import tseslint from 'typescript-eslint';
 
 export default [
   {
     ignores: ['dist/**', 'lib/**', 'node_modules/**'],
   },
-  github.getFlatConfigs().recommended,
   ...tseslint.configs.recommended,
   {
+    // Exclude config files from type-aware linting - they use different module
+    // resolution and don't need strict type checking
     files: ['**/*.ts', '**/*.tsx'],
+    ignores: ['*.config.ts'],
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      vitest: vitestPlugin,
-      import: importPlugin,
     },
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: 2018,
         sourceType: 'module',
-        project: ['./tsconfig.json', './test/tsconfig.json'],
-      },
-    },
-    settings: {
-      'import/resolver': {
-        node: {
-          extensions: ['.js', '.jsx', '.ts', '.tsx'],
-        },
+        project: ['./tsconfig.json', './__tests__/tsconfig.json'],
       },
     },
     rules: {
-      'no-console': 'off',
-      'import/no-unresolved': 'off',
-      'import/extensions': 'off',
-      'eslint-comments/no-use': 'off',
-      'i18n-text/no-en': 'off',
-      'import/no-namespace': 'off',
-      'no-unused-vars': 'off',
-      'sort-imports': 'off',
-      'import/order': [
-        'error',
-        {
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
-          'newlines-between': 'never',
-          alphabetize: {
-            order: 'asc',
-            caseInsensitive: true,
-          },
-        },
-      ],
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/explicit-member-accessibility': ['error', {accessibility: 'no-public'}],
       '@typescript-eslint/no-require-imports': 'error',
@@ -82,6 +54,23 @@ export default [
       '@typescript-eslint/prefer-string-starts-ends-with': 'error',
       '@typescript-eslint/promise-function-async': 'error',
       '@typescript-eslint/require-array-sort-compare': 'error',
+    },
+  },
+  {
+    files: ['__tests__/**/*.ts', 'test/**/*.ts'],
+    plugins: {
+      vitest: vitestPlugin,
+    },
+    rules: {
+      ...vitestPlugin.configs.recommended.rules,
+    },
+  },
+  {
+    // Config files don't need type-aware linting
+    files: ['*.config.js', '*.config.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
     },
   },
 ];
