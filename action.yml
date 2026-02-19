@@ -64,6 +64,10 @@ outputs:
     description: The full SEMVER (including any pre-release info and all metadata)
   ver_semVerNoMeta:
     description: The SEMVER without any metadata (including any pre-release info)
+  ver_semVerNoMetaPyPA:
+    description: The version in PEP 440 format for Python packages (e.g., 1.2.3rc23 instead of 1.2.3-rc.23)
+  ver_semVerFourTupleNumeric:
+    description: The version as a four-tuple numeric format (e.g., 1.2.3.23)
 
   docker_tags:
     description: A list of docker tags that can be passed to docker/build-push-action@v2
@@ -93,6 +97,8 @@ outputs:
 
   release_tag:
     description: Release tag. Contains version or empty value if release was not created.
+  release_previousTag:
+    description: The previous release tag version (e.g., v3.5.9)
 
 runs:
   using: 'node20'

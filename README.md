@@ -23,15 +23,15 @@ All versions are stored inside of tags. After every commit inside of the main br
 
 ## Versioning
 
-| Event          | Ref                           | Commit SHA | Base Ver | Run # | `${{ ver_semVer }}`                                    | `${{ ver_tag }}` |
-| -------------- | ----------------------------- | ---------- | -------- | ----- | ------------------------------------------------------ | ---------------- |
-| `schedule`     |                               |            | `1.2.3`  | `99`  | `1.2.3-prerelease.99+20200919T202359087Z`              | `nightly`        |
-| `pull_request` | `refs/pull/2/merge`           | `a123b570` | `1.2.3`  | `99`  | `1.2.3-prerelease.99+20200919T202359087Z.sha-a123b570` | `pr-2`           |
-| `push`         | `refs/heads/<default_branch>` | `676cae2a` | `1.2.3`  | `99`  | `1.2.3-prerelease.99+20200919T202359087Z.sha-676cae2a` | `edge`           |
-| `push`         | `refs/heads/dev`              | `cf202579` | `1.2.3`  | `99`  | `1.2.3-prerelease.99+20200919T202359087Z.sha-cf202579` | `dev`            |
-| `push`         | `refs/heads/my/branch`        | `a5df6872` | `1.2.3`  | `99`  | `1.2.3-prerelease.99+20200919T202359087Z.sha-a5df6872` | `my/branch`      |
-| `push tag`     | `refs/tags/v1.2.3`            |            | `1.2.3`  | `99`  | `1.2.3+20200919T202359087Z.sha-a8cb3d0e`               | `v1.2.3`         |
-| `push tag`     | `refs/tags/v1.2.3-alpha.1`    |            | `1.2.3`  | `99`  | `1.2.3-alpha.1+20200919T202359087Z.sha-a8cb3d0e`       | `v1.2.3-alpha.1` |
+| Event          | Ref                           | Commit SHA | Base Ver | Run # | `${{ ver_semVer }}`                              | `${{ ver_tag }}` |
+| -------------- | ----------------------------- | ---------- | -------- | ----- | ------------------------------------------------ | ---------------- |
+| `schedule`     |                               |            | `1.2.3`  | `99`  | `1.2.3-rc.99+20200919T202359087Z`                | `nightly`        |
+| `pull_request` | `refs/pull/2/merge`           | `a123b570` | `1.2.3`  | `99`  | `1.2.3-rc.99+20200919T202359087Z.sha-a123b570`   | `pr-2`           |
+| `push`         | `refs/heads/<default_branch>` | `676cae2a` | `1.2.3`  | `99`  | `1.2.3-rc.99+20200919T202359087Z.sha-676cae2a`   | `edge`           |
+| `push`         | `refs/heads/dev`              | `cf202579` | `1.2.3`  | `99`  | `1.2.3-rc.99+20200919T202359087Z.sha-cf202579`   | `dev`            |
+| `push`         | `refs/heads/my/branch`        | `a5df6872` | `1.2.3`  | `99`  | `1.2.3-rc.99+20200919T202359087Z.sha-a5df6872`   | `my/branch`      |
+| `push tag`     | `refs/tags/v1.2.3`            |            | `1.2.3`  | `99`  | `1.2.3+20200919T202359087Z.sha-a8cb3d0e`         | `v1.2.3`         |
+| `push tag`     | `refs/tags/v1.2.3-alpha.1`    |            | `1.2.3`  | `99`  | `1.2.3-alpha.1+20200919T202359087Z.sha-a8cb3d0e` | `v1.2.3-alpha.1` |
 
 ## Docker Tags
 
@@ -58,7 +58,7 @@ steps.vtl.outputs.oci_title="action-vtl"
 steps.vtl.outputs.oci_description="GitHub Action for establishing a consistent semver"
 steps.vtl.outputs.oci_url="https://github.com/mapped/action-vtl"
 steps.vtl.outputs.oci_source="https://github.com/mapped/action-vtl.git"
-steps.vtl.outputs.oci_version="1.2.3-prerelease.21+20200919T205832346Z.sha-caed088d"
+steps.vtl.outputs.oci_version="1.2.3-rc.21+20200919T205832346Z.sha-caed088d"
 steps.vtl.outputs.oci_created="2020-09-19T20:58:32.346Z"
 steps.vtl.outputs.oci_revision="caed088d0624b0dcb22cdf31b70ff0daff4c10d1"
 steps.vtl.outputs.oci_licenses="MIT"
@@ -66,7 +66,7 @@ steps.vtl.outputs.oci_labels="org.opencontainers.image.title=action-vtl
                 org.opencontainers.image.description=GitHub Action for establishing a consistent semver
                 org.opencontainers.image.url=https://github.com/mapped/action-vtl
                 org.opencontainers.image.source=https://github.com/mapped/action-vtl.git
-                org.opencontainers.image.version=1.2.3-prerelease.21+20200919T205832346Z.sha-caed088d
+                org.opencontainers.image.version=1.2.3-rc.21+20200919T205832346Z.sha-caed088d
                 org.opencontainers.image.created=2020-09-19T20:58:32.346Z
                 org.opencontainers.image.revision=caed088d0624b0dcb22cdf31b70ff0daff4c10d1
                 org.opencontainers.image.licenses=MIT"
@@ -103,7 +103,7 @@ The following inputs can be passed to this action as `step.with` keys:
 | `dockerImage`                    | String | The name of the docker image to produce tags for. If omitted, no docker tags will be produced. (default ``)                                               |
 | `gitHubToken`                    | String | The GITHUB_TOKEN value. Required to produce latest tags. (default ``)                                                                                     |
 | `branchMappings`                 | List   | Used for mapping untagged branches to tag names. Mappings are one per line, each as `branch:target_name`. (default `main:edge`)                           |
-| `prereleasePrefix`               | String | The <pre-release> prefix on an untagged run. (default `prerelease`)                                                                                       |
+| `prereleasePrefix`               | String | The <pre-release> prefix on an untagged run. (default `rc`)                                                                                               |
 | `tagPrefix`                      | String | Prefix GitHub tag names with a string of your choice.                                                                                                     |
 | `versionFile`                    | String | A filename where the full SEMVER and commit SHA will be written. Set to empty string if you do not want a version file to be created. (default `VERSION`) |
 | `releasesBranch`                 | String | Branch where automatic releases should be created. Set to empty string to deactivate releases creation. (default `main`)                                  |
@@ -146,6 +146,10 @@ steps.vtl.outputs.ver_created='2020-09-19T20:23:59.087Z'
 steps.vtl.outputs.ver_tag='v1.3.5'
 steps.vtl.outputs.ver_semVer='1.3.5+20200919T202359087Z.sha-a8cb3d0e'
 steps.vtl.outputs.ver_semVerNoMeta='1.3.5'
+steps.vtl.outputs.ver_semVerNoMetaPyPA='1.3.5'
+steps.vtl.outputs.ver_semVerFourTupleNumeric='1.3.5.23'
+
+steps.vtl.outputs.release_previousTag='v1.3.4'
 
 steps.vtl.outputs.docker_tags='owner/container-name:v1.3.5,owner/container-name:v1,owner/container-name:v1.3'
 steps.vtl.outputs.docker_push='true'
@@ -192,7 +196,8 @@ steps.vtl.outputs.ver_created='2020-09-19T20:22:19.571Z'
 steps.vtl.outputs.ver_tag='edge'
 steps.vtl.outputs.ver_semVer='1.2.3-prerelease.23+20200919T202219571Z.sha-a8cb3d0e'
 steps.vtl.outputs.ver_semVerNoMeta='1.2.3-prerelease.23'
-steps.vtl.outputs.ver_semVerNoMetaPyPA='1.2.3+prerelease.23'
+steps.vtl.outputs.ver_semVerNoMetaPyPA='1.2.3rc23'
+steps.vtl.outputs.ver_semVerFourTupleNumeric='1.2.3.23'
 
 steps.vtl.outputs.docker_tags='owner/container-name:edge,owner/container-name:sha-a8cb3d0e'
 steps.vtl.outputs.docker_push='true'
@@ -237,6 +242,8 @@ steps.vtl.outputs.ver_created='2020-09-19T20:18:59.527Z'
 steps.vtl.outputs.ver_tag='my-working-branch'
 steps.vtl.outputs.ver_semVer='1.2.3-prerelease.23+20200919T201859527Z.sha-a8cb3d0e'
 steps.vtl.outputs.ver_semVerNoMeta='1.2.3-prerelease.23'
+steps.vtl.outputs.ver_semVerNoMetaPyPA='1.2.3rc23'
+steps.vtl.outputs.ver_semVerFourTupleNumeric='1.2.3.23'
 
 steps.vtl.outputs.docker_tags='owner/container-name:my-working-branch,owner/container-name:sha-a8cb3d0e'
 steps.vtl.outputs.docker_push='true'
@@ -279,8 +286,10 @@ steps.vtl.outputs.ver_metadata='20200919T201457882Z.sha-a8cb3d0e'
 steps.vtl.outputs.ver_buildNumber='23'
 steps.vtl.outputs.ver_created='2020-09-19T20:14:57.882Z'
 steps.vtl.outputs.ver_tag='pr-37'
-steps.vtl.outputs.ver_semVer='1.2.3-prerelease.17+20200919T201457882Z.sha-a8cb3d0e'
+steps.vtl.outputs.ver_semVer='1.2.3-prerelease.23+20200919T201457882Z.sha-a8cb3d0e'
 steps.vtl.outputs.ver_semVerNoMeta='1.2.3-prerelease.23'
+steps.vtl.outputs.ver_semVerNoMetaPyPA='1.2.3rc23'
+steps.vtl.outputs.ver_semVerFourTupleNumeric='1.2.3.23'
 
 steps.vtl.outputs.docker_tags='owner/container-name:pr-37'
 steps.vtl.outputs.docker_push='false'
