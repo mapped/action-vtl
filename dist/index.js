@@ -35903,16 +35903,17 @@ async function SemVer(baseVer, isPrerelease, branchMappings, preReleasePrefix, c
         throw new Error(`base-version of "${baseVer}" is not a valid SEMVER`);
     }
     // Get the pre-release prefix
-    if (preReleasePrefix.length > 0) {
-        preReleasePrefix += '.';
-    }
+    // For SEMVER: use the input parameter with dot separator (prerelease.23)
+    // For PEP 440: always use 'rc' with no separator (rc23)
+    const preReleasePrefixSemVer = preReleasePrefix.length > 0 ? preReleasePrefix + '.' : '';
+    const preReleasePrefixPyPA = 'rc';
     // Unless a tag changes it, the base ver is what we work from
     const created = new Date().toISOString();
     const ver = {
         major: parseInt(baseVerParts[1] ?? '0', 10),
         minor: parseInt(baseVerParts[2] ?? '0', 10),
         patch: parseInt(baseVerParts[3] ?? '0', 10),
-        preRelease: isPrerelease ? preReleasePrefix + context.runNumber.toString() : '',
+        preRelease: isPrerelease ? preReleasePrefixSemVer + context.runNumber.toString() : '',
         metadata: `${created.replace(/[.:-]/g, '')}.sha-${context.sha.substring(0, 8)}`,
         buildNumber: context.runNumber.toString(),
         created,
@@ -35976,12 +35977,18 @@ async function SemVer(baseVer, isPrerelease, branchMappings, preReleasePrefix, c
     }
     // Put the SEMVER together
     ver.semVer = `${ver.major}.${ver.minor}.${ver.patch}`;
+    ver.semVerNoMeta = ver.semVer;
     ver.semVerNoMetaPyPA = ver.semVer;
     if (ver.preRelease.length > 0) {
+        // SEMVER format: 1.2.3-rc.23
         ver.semVer += `-${ver.preRelease}`;
-        ver.semVerNoMetaPyPA += `+${ver.preRelease}`;
+        ver.semVerNoMeta += `-${ver.preRelease}`;
+        // PEP 440 format: 1.2.3rc23 (no separator, no dot)
+        const preReleasePyPA = isPrerelease
+            ? preReleasePrefixPyPA + context.runNumber.toString()
+            : ver.preRelease.replace(/\./g, '');
+        ver.semVerNoMetaPyPA += preReleasePyPA;
     }
-    ver.semVerNoMeta = ver.semVer;
     if (ver.metadata.length > 0) {
         ver.semVer += `+${ver.metadata}`;
     }
