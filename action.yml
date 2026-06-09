@@ -101,7 +101,7 @@ outputs:
     description: The previous release tag version (e.g., v3.5.9)
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
 
 branding:
