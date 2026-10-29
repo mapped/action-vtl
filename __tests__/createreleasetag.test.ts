@@ -355,7 +355,7 @@ test('create major release', async () => {
 
   commits = [
     {
-      message: 'feat(#taskid)!: Add new browsing panel',
+      message: 'feat(ui)!: Add new browsing panel',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
@@ -385,7 +385,7 @@ test('create major for breaking change', async () => {
 
   commits = [
     {
-      message: 'feat(#taskid): Add new browsing panel\nBREAKING CHANGE: Switch to APIv2.0',
+      message: 'feat(ui): Add new browsing panel\nBREAKING CHANGE: Switch to APIv2.0',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
@@ -442,7 +442,7 @@ test('rerun for already created release', async () => {
 
   commits = [
     {
-      message: 'feat(#taskid)!: New but already processed release commit',
+      message: 'feat(ui)!: New but already processed release commit',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
@@ -471,7 +471,7 @@ test('rerun for already created release with forced patch creation', async () =>
 
   commits = [
     {
-      message: 'feat(#taskid)!: New but already processed release commit',
+      message: 'feat(ui)!: New but already processed release commit',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
@@ -504,7 +504,7 @@ test('commits in other branch', async () => {
 
   commits = [
     {
-      message: 'feat(#taskid)!: Add new browsing panel',
+      message: 'feat(ui)!: Add new browsing panel',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
