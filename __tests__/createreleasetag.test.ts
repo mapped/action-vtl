@@ -48,6 +48,8 @@ let commits = [
   {message: 'fix: Fix exception during startup', sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf'},
 ];
 
+let pullRequestTitles: Record<string, string[]> = {};
+
 const createTagMock = vi.fn();
 
 vi.mock('../src/releasetag/githubclient', () => {
@@ -73,6 +75,9 @@ vi.mock('../src/releasetag/githubclient', () => {
           };
         });
       }
+      async getPullRequestTitles(commitSha: string): Promise<string[]> {
+        return pullRequestTitles[commitSha] ?? [];
+      }
       createTag = createTagMock;
     },
   };
@@ -80,6 +85,7 @@ vi.mock('../src/releasetag/githubclient', () => {
 
 beforeEach(() => {
   createTagMock.mockClear();
+  pullRequestTitles = {};
 });
 
 test('create first release', async () => {
@@ -154,6 +160,55 @@ test('create minor release', async () => {
   expect(res.isPrerelease()).toBeFalsy();
   expect(createTagMock.mock.calls.length).toBe(1);
   expect(createTagMock.mock.calls[0][0]).toBe('v3.6.0');
+});
+
+test('create minor release for a feature PR title with only fix commits', async () => {
+  const baseVer = '1.0.0';
+
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+
+  commits = [
+    {
+      message: 'fix: Add API support',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+  pullRequestTitles = {
+    a8cb3d0eae1f1a064896493f4cf63dafc17bafcf: ['feat: Add support for creating API keys'],
+  };
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.6.0');
+  expect(createTagMock.mock.calls[0][0]).toBe('v3.6.0');
+});
+
+test('create major release for a breaking PR title', async () => {
+  const baseVer = '1.0.0';
+
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message: 'fix: Update API handling',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+  pullRequestTitles = {
+    a8cb3d0eae1f1a064896493f4cf63dafc17bafcf: ['feat!: Replace the public API'],
+  };
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', baseVer, false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v4.0.0');
+  expect(createTagMock.mock.calls[0][0]).toBe('v4.0.0');
 });
 
 test('create major release', async () => {

@@ -1,21 +1,19 @@
-<p align="center">
-  <a href="https://github.com/mapped/action-version/actions"><img alt="action-semver status" src="https://github.com/mapped/action-version/workflows/build-test/badge.svg"></a>
-</p>
-
 # GitHub Action for Consistent Versioning, Tagging, and Labeling of Builds
 
 This GitHub Action creates consistent versioning, tagging, and labels for use in package/assembly versions and docker images.
 
 ## Version automatic increment
 
-All versions are stored inside of tags. After every commit inside of the main branch (you may override it by `releasesBranch` parameter) version is incremented acconding to [conventional commit messages](https://www.conventionalcommits.org/en/v1.0.0/) and saved into a new tag. There are some quick examples:
-| Commit | What happens to versioning |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `feat(#task123): allow users to edit their profile` | Increment **MINOR** version |
-| `fix: remove memory leak inside of WebController` | Increment **PATCH** version |
-| `feat(#task123)!: rewrite user JSON representation in API` | Add **MAJOR** version (by adding `!` sign) |
-| `fix: Remove wrong user name\nBREAKING CHANGE: Changed user name format` | Increment **MAJOR** version (by adding `BREAKING CHANGE:` somewhere inside of commit message. Note that in must be in uppercase and contain `:` without any spaces in between) |
-| `Rename user profile classes` | If you do NOT follow the [conventional commit messages](https://www.conventionalcommits.org/en/v1.0.0/) then it will increment **PATCH** |
+All versions are stored inside of tags. After every commit inside of the main branch (you may override it by `releasesBranch` parameter) version is incremented according to [conventional commit messages](https://www.conventionalcommits.org/en/v1.0.0/) in commit messages and associated pull request titles, then saved into a new tag. There are some quick examples:
+
+| Commit or pull request title                                                | What happens to versioning                                                                                                                                                     |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `feat(#task123): allow users to edit their profile`                         | Increment **MINOR** version                                                                                                                                                    |
+| `fix: remove memory leak inside of WebController`                           | Increment **PATCH** version                                                                                                                                                    |
+| `feat(#task123)!: rewrite user JSON representation in API`                  | Add **MAJOR** version (by adding `!` sign)                                                                                                                                     |
+| PR title `feat: add API key creation` (even if its commits are only `fix:`) | Increment **MINOR** version                                                                                                                                                    |
+| `fix: Remove wrong user name\nBREAKING CHANGE: Changed user name format`    | Increment **MAJOR** version (by adding `BREAKING CHANGE:` somewhere inside of commit message. Note that in must be in uppercase and contain `:` without any spaces in between) |
+| `Rename user profile classes`                                               | If you do NOT follow the [conventional commit messages](https://www.conventionalcommits.org/en/v1.0.0/) then it will increment **PATCH**                                       |
 
 **NOTE**: Tags are only created in `main` branch. So if you work in a separate branch it will NOT create any release until you merge the changes into `main`.
 
@@ -101,7 +99,7 @@ The following inputs can be passed to this action as `step.with` keys:
 | -------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `baseVersion`                    | String | The base version of this repo. The first version of release. Applied if there is no any release yet. "v" prefix is optional.                              |
 | `dockerImage`                    | String | The name of the docker image to produce tags for. If omitted, no docker tags will be produced. (default ``)                                               |
-| `gitHubToken`                    | String | The GITHUB_TOKEN value. Required to produce latest tags. (default ``)                                                                                     |
+| `gitHubToken`                    | String | The GITHUB_TOKEN value. Requires `contents: write` and `pull-requests: read` permissions to create release tags and read PR titles. (default ``)          |
 | `branchMappings`                 | List   | Used for mapping untagged branches to tag names. Mappings are one per line, each as `branch:target_name`. (default `main:edge`)                           |
 | `prereleasePrefix`               | String | The <pre-release> prefix on an untagged run. (default `rc`)                                                                                               |
 | `tagPrefix`                      | String | Prefix GitHub tag names with a string of your choice.                                                                                                     |

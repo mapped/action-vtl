@@ -108,6 +108,16 @@ export class GitHubClient {
     return commits;
   }
 
+  async getPullRequestTitles(commitSha: string): Promise<string[]> {
+    const res = await this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+      owner: this.owner,
+      repo: this.repo,
+      commit_sha: commitSha,
+    });
+
+    return res.data.map(pullRequest => pullRequest.title);
+  }
+
   async createTag(tagName: string, comments: string, commitSha: string): Promise<void> {
     await this.octokit.rest.git.createTag({
       owner: this.owner,
