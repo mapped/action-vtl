@@ -253,6 +253,126 @@ test('create major release for a breaking PR title', async () => {
   expect(createTagMock.mock.calls[0][0]).toBe('v4.0.0');
 });
 
+test('create minor release for a squashed feature commit under a fix PR title', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message:
+        'fix: Improve API handling (#42)\n\n* fix: Handle empty responses\n\n* feat(api): Add pagination\n\n* fix: Typo\n\nCo-authored-by: Someone <someone@example.com>',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+  pullRequestTitles = {
+    a8cb3d0eae1f1a064896493f4cf63dafc17bafcf: ['fix: Improve API handling'],
+  };
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.6.0');
+});
+
+test('create major release for a squashed breaking commit under a fix PR title', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message:
+        'fix: Improve API handling (#42)\n\n* fix: Handle empty responses\n\n* refactor(api)!: Drop v1 endpoints',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v4.0.0');
+});
+
+test.each([
+  ['fix: Update API\n\n* perf(api)!: Remove deprecated API', '', 'v4.0.0'],
+  ['fix: Update API\n\n* custom(api)!: Remove deprecated API', '', 'v4.0.0'],
+  ['perf(api)!: Remove deprecated API', '', 'v4.0.0'],
+  ['fix: Update API', 'perf(api)!: Remove deprecated API', 'v4.0.0'],
+  ['fix: Update API\n\n* perf(api): Improve performance', '', 'v3.5.10'],
+  ['fix: Update API\n\n* custom(api): Improve performance', '', 'v3.5.10'],
+])('evaluate arbitrary types in message %s and PR title %s', async (message, title, version) => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {message, sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf'},
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+  pullRequestTitles = {
+    a8cb3d0eae1f1a064896493f4cf63dafc17bafcf: title ? [title] : [],
+  };
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe(version);
+});
+
+test('ignore body lines that are not conventional commits', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message: 'fix: Improve API handling\n\nThis is not a feat: just a description\n* Update docs',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
+});
+
+test('treat lines before the first blank line as part of the subject', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message: 'fix: Improve API handling\nfeat: continuation of the subject',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
+});
+
+test('create minor release for a scoped feature title', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message: 'feat(storage): Add Redis lock monitor',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.6.0');
+});
+
 test('create major release', async () => {
   const baseVer = '1.0.0';
 
@@ -260,7 +380,7 @@ test('create major release', async () => {
 
   commits = [
     {
-      message: 'feat(#taskid)!: Add new browsing panel',
+      message: 'feat(ui)!: Add new browsing panel',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
@@ -290,7 +410,7 @@ test('create major for breaking change', async () => {
 
   commits = [
     {
-      message: 'feat(#taskid): Add new browsing panel\nBREAKING CHANGE: Switch to APIv2.0',
+      message: 'feat(ui): Add new browsing panel\nBREAKING CHANGE: Switch to APIv2.0',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
@@ -347,7 +467,7 @@ test('rerun for already created release', async () => {
 
   commits = [
     {
-      message: 'feat(#taskid)!: New but already processed release commit',
+      message: 'feat(ui)!: New but already processed release commit',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
@@ -376,7 +496,7 @@ test('rerun for already created release with forced patch creation', async () =>
 
   commits = [
     {
-      message: 'feat(#taskid)!: New but already processed release commit',
+      message: 'feat(ui)!: New but already processed release commit',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
@@ -409,7 +529,7 @@ test('commits in other branch', async () => {
 
   commits = [
     {
-      message: 'feat(#taskid)!: Add new browsing panel',
+      message: 'feat(ui)!: Add new browsing panel',
       sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
     },
     {
