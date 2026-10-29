@@ -49,6 +49,8 @@ let commits = [
 ];
 
 let pullRequestTitles: Record<string, string[]> = {};
+let pullRequestTitlesError: Error | null = null;
+let pullRequestTitlesCalls = 0;
 
 const createTagMock = vi.fn();
 
@@ -76,6 +78,10 @@ vi.mock('../src/releasetag/githubclient', () => {
         });
       }
       async getPullRequestTitles(commitSha: string): Promise<string[]> {
+        pullRequestTitlesCalls++;
+        if (pullRequestTitlesError) {
+          throw pullRequestTitlesError;
+        }
         return pullRequestTitles[commitSha] ?? [];
       }
       createTag = createTagMock;
@@ -86,6 +92,42 @@ vi.mock('../src/releasetag/githubclient', () => {
 beforeEach(() => {
   createTagMock.mockClear();
   pullRequestTitles = {};
+  pullRequestTitlesError = null;
+  pullRequestTitlesCalls = 0;
+});
+
+function httpError(status: number, message: string): Error {
+  return Object.assign(new Error(message), {status});
+}
+
+test('fall back to commit messages when pull requests are not accessible', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {message: 'feat: New API', sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf'},
+    {message: 'fix: Small fix', sha: '1111111111111111111111111111111111111111'},
+    {message: 'feat: Previous release commit', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'},
+  ];
+  pullRequestTitlesError = httpError(403, 'Resource not accessible by integration');
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.6.0');
+  expect(createTagMock.mock.calls[0][0]).toBe('v3.6.0');
+  expect(pullRequestTitlesCalls).toBe(1);
+});
+
+test('fail when pull request lookup fails for other reasons', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {message: 'fix: Small fix', sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf'},
+    {message: 'feat: Previous release commit', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'},
+  ];
+  pullRequestTitlesError = httpError(500, 'Server error');
+
+  await expect(
+    CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false),
+  ).rejects.toThrow('Server error');
+  expect(createTagMock).not.toHaveBeenCalled();
 });
 
 test('create first release', async () => {

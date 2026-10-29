@@ -101,6 +101,7 @@ export async function CreateReleaseTag(
     let incrementMinor = false;
     let incrementPatch = false;
     let reachedLatestReleaseCommit = false;
+    let pullRequestTitlesAvailable = true;
     const semanticCommitRegExp =
       /(feat|fix|chore|refactor|style|test|docs)(\(#(\w{0,15})\))?(!)?:\s?(.*)/i;
 
@@ -117,7 +118,25 @@ export async function CreateReleaseTag(
         releaseComments += `\n${message}`;
       }
 
-      const messages = [message, ...(await gitHubClient.getPullRequestTitles(commit.sha))];
+      let prTitles: string[] = [];
+      if (pullRequestTitlesAvailable) {
+        try {
+          prTitles = await gitHubClient.getPullRequestTitles(commit.sha);
+          /* eslint-disable @typescript-eslint/no-explicit-any */
+        } catch (error: any) {
+          /* eslint-enable @typescript-eslint/no-explicit-any */
+          if (error?.status !== 403 && error?.status !== 404) {
+            throw error;
+          }
+          pullRequestTitlesAvailable = false;
+          core.warning(
+            `Cannot read pull requests associated with commits (${error.message}). ` +
+              "Falling back to commit messages only. Grant 'pull-requests: read' to the workflow to also consider PR titles.",
+          );
+        }
+      }
+
+      const messages = [message, ...prTitles];
       for (const semanticMessage of messages) {
         const matches = semanticCommitRegExp.exec(semanticMessage);
 
