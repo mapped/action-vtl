@@ -38005,7 +38005,8 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
         let incrementPatch = false;
         let reachedLatestReleaseCommit = false;
         let pullRequestTitlesAvailable = true;
-        const semanticCommitRegExp = /(feat|fix|chore|refactor|style|test|docs)(\(#(\w{0,15})\))?(!)?:\s?(.*)/i;
+        const semanticCommitRegExp = /([a-z][a-z0-9_-]*)(\([^)]*\))?(!)?:\s?(.*)/i;
+        const squashedCommitRegExp = /^\s*(?:[*-]\s+)?([a-z][a-z0-9_-]*)(\([^)]*\))?(!)?:\s?(.*)/i;
         // Choose the most significant change among all commits since previous release
         for (const commit of commits) {
             if (commit.sha === res.previousReleaseTagCommitSha) {
@@ -38041,17 +38042,34 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
                     continue;
                 }
                 // Breaking change rules described here https://www.conventionalcommits.org/en/v1.0.0/
-                const breakingChangeSign = matches[4];
+                const breakingChangeSign = matches[3];
                 if (breakingChangeSign || semanticMessage.includes('BREAKING CHANGE:')) {
                     incrementMajor = true;
                     continue;
                 }
-                const commitType = matches[1];
+                const commitType = matches[1].toLowerCase();
                 if (commitType === 'feat') {
                     incrementMinor = true;
                     continue;
                 }
                 incrementPatch = true;
+            }
+            // Squash merges list the squashed commits in the body (e.g. "* feat: ..."), so a
+            // `fix:` PR title must not hide a `feat:` or breaking commit that was squashed into it.
+            // As in git, the body starts after the first blank line; earlier lines belong to the subject.
+            const bodyStart = (message ?? '').search(/\r?\n\s*\r?\n/);
+            const body = bodyStart === -1 ? '' : message.slice(bodyStart);
+            for (const line of body.split(/\r?\n/)) {
+                const matches = squashedCommitRegExp.exec(line);
+                if (matches === null) {
+                    continue;
+                }
+                if (matches[3]) {
+                    incrementMajor = true;
+                }
+                else if (matches[1].toLowerCase() === 'feat') {
+                    incrementMinor = true;
+                }
             }
         }
         if (!reachedLatestReleaseCommit) {
