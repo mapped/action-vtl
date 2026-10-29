@@ -37796,6 +37796,14 @@ class GitHubClient {
         }
         return commits;
     }
+    async getPullRequestTitles(commitSha) {
+        const res = await this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+            owner: this.owner,
+            repo: this.repo,
+            commit_sha: commitSha,
+        });
+        return res.data.map(pullRequest => pullRequest.title);
+    }
     async createTag(tagName, comments, commitSha) {
         await this.octokit.rest.git.createTag({
             owner: this.owner,
@@ -37900,27 +37908,30 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
                 break;
             }
             const message = commit.commit.message;
-            const matches = semanticCommitRegExp.exec(message);
             if (message) {
                 releaseComments += `\n${message}`;
             }
-            if (matches === null) {
-                // Always increment patch if developer does not write messages in "semantic commits" manner (https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716)
+            const messages = [message, ...(await gitHubClient.getPullRequestTitles(commit.sha))];
+            for (const semanticMessage of messages) {
+                const matches = semanticCommitRegExp.exec(semanticMessage);
+                if (matches === null) {
+                    // Always increment patch if developer does not write messages in "semantic commits" manner (https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716)
+                    incrementPatch = true;
+                    continue;
+                }
+                // Breaking change rules described here https://www.conventionalcommits.org/en/v1.0.0/
+                const breakingChangeSign = matches[4];
+                if (breakingChangeSign || semanticMessage.includes('BREAKING CHANGE:')) {
+                    incrementMajor = true;
+                    continue;
+                }
+                const commitType = matches[1];
+                if (commitType === 'feat') {
+                    incrementMinor = true;
+                    continue;
+                }
                 incrementPatch = true;
-                continue;
             }
-            // Breaking change rules described here https://www.conventionalcommits.org/en/v1.0.0/
-            const breakingChangeSign = matches[4];
-            if (breakingChangeSign || message.includes('BREAKING CHANGE:')) {
-                incrementMajor = true;
-                continue;
-            }
-            const commitType = matches[1];
-            if (commitType === 'feat') {
-                incrementMinor = true;
-                continue;
-            }
-            incrementPatch = true;
         }
         if (!reachedLatestReleaseCommit) {
             throw Error(`Failed to reach the latest release tag '${res.previousReleaseTag.toString()}' (${res.previousReleaseTagCommitSha}) inside of the '${releasesBranch}' branch.`);
