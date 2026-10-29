@@ -312,6 +312,24 @@ test('ignore body lines that are not conventional commits', async () => {
   expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
 });
 
+test('treat lines before the first blank line as part of the subject', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message: 'fix: Improve API handling\nfeat: continuation of the subject',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
+});
+
 test('create minor release for a scoped feature title', async () => {
   tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
   commits = [
