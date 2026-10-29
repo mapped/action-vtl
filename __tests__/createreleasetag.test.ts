@@ -294,6 +294,31 @@ test('create major release for a squashed breaking commit under a fix PR title',
   expect(res.createdReleaseTag?.toString()).toBe('v4.0.0');
 });
 
+test.each([
+  ['fix: Update API\n\n* perf(api)!: Remove deprecated API', '', 'v4.0.0'],
+  ['fix: Update API\n\n* custom(api)!: Remove deprecated API', '', 'v4.0.0'],
+  ['perf(api)!: Remove deprecated API', '', 'v4.0.0'],
+  ['fix: Update API', 'perf(api)!: Remove deprecated API', 'v4.0.0'],
+  ['fix: Update API\n\n* perf(api): Improve performance', '', 'v3.5.10'],
+  ['fix: Update API\n\n* custom(api): Improve performance', '', 'v3.5.10'],
+])('evaluate arbitrary types in message %s and PR title %s', async (message, title, version) => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {message, sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf'},
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+  pullRequestTitles = {
+    a8cb3d0eae1f1a064896493f4cf63dafc17bafcf: title ? [title] : [],
+  };
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe(version);
+});
+
 test('ignore body lines that are not conventional commits', async () => {
   tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
   commits = [

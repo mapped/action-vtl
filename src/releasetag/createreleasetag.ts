@@ -102,10 +102,8 @@ export async function CreateReleaseTag(
     let incrementPatch = false;
     let reachedLatestReleaseCommit = false;
     let pullRequestTitlesAvailable = true;
-    const semanticCommitRegExp =
-      /(feat|fix|chore|refactor|style|test|docs)(\([^)]*\))?(!)?:\s?(.*)/i;
-    const squashedCommitRegExp =
-      /^\s*(?:[*-]\s+)?(feat|fix|chore|refactor|style|test|docs)(\([^)]*\))?(!)?:\s?(.*)/i;
+    const semanticCommitRegExp = /([a-z][a-z0-9_-]*)(\([^)]*\))?(!)?:\s?(.*)/i;
+    const squashedCommitRegExp = /^\s*(?:[*-]\s+)?([a-z][a-z0-9_-]*)(\([^)]*\))?(!)?:\s?(.*)/i;
 
     // Choose the most significant change among all commits since previous release
     for (const commit of commits) {
