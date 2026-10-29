@@ -38004,6 +38004,7 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
         let incrementMinor = false;
         let incrementPatch = false;
         let reachedLatestReleaseCommit = false;
+        let pullRequestTitlesAvailable = true;
         const semanticCommitRegExp = /(feat|fix|chore|refactor|style|test|docs)(\(#(\w{0,15})\))?(!)?:\s?(.*)/i;
         // Choose the most significant change among all commits since previous release
         for (const commit of commits) {
@@ -38015,7 +38016,23 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
             if (message) {
                 releaseComments += `\n${message}`;
             }
-            const messages = [message, ...(await gitHubClient.getPullRequestTitles(commit.sha))];
+            let prTitles = [];
+            if (pullRequestTitlesAvailable) {
+                try {
+                    prTitles = await gitHubClient.getPullRequestTitles(commit.sha);
+                    /* eslint-disable @typescript-eslint/no-explicit-any */
+                }
+                catch (error) {
+                    /* eslint-enable @typescript-eslint/no-explicit-any */
+                    if (error?.status !== 403 && error?.status !== 404) {
+                        throw error;
+                    }
+                    pullRequestTitlesAvailable = false;
+                    warning(`Cannot read pull requests associated with commits (${error.message}). ` +
+                        "Falling back to commit messages only. Grant 'pull-requests: read' to the workflow to also consider PR titles.");
+                }
+            }
+            const messages = [message, ...prTitles];
             for (const semanticMessage of messages) {
                 const matches = semanticCommitRegExp.exec(semanticMessage);
                 if (matches === null) {
