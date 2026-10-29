@@ -38056,7 +38056,10 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
             }
             // Squash merges list the squashed commits in the body (e.g. "* feat: ..."), so a
             // `fix:` PR title must not hide a `feat:` or breaking commit that was squashed into it.
-            for (const line of (message ?? '').split('\n').slice(1)) {
+            // As in git, the body starts after the first blank line; earlier lines belong to the subject.
+            const bodyStart = (message ?? '').search(/\r?\n\s*\r?\n/);
+            const body = bodyStart === -1 ? '' : message.slice(bodyStart);
+            for (const line of body.split(/\r?\n/)) {
                 const matches = squashedCommitRegExp.exec(line);
                 if (matches === null) {
                     continue;
