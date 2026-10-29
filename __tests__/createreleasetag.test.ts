@@ -253,6 +253,83 @@ test('create major release for a breaking PR title', async () => {
   expect(createTagMock.mock.calls[0][0]).toBe('v4.0.0');
 });
 
+test('create minor release for a squashed feature commit under a fix PR title', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message:
+        'fix: Improve API handling (#42)\n\n* fix: Handle empty responses\n\n* feat(api): Add pagination\n\n* fix: Typo\n\nCo-authored-by: Someone <someone@example.com>',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+  pullRequestTitles = {
+    a8cb3d0eae1f1a064896493f4cf63dafc17bafcf: ['fix: Improve API handling'],
+  };
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.6.0');
+});
+
+test('create major release for a squashed breaking commit under a fix PR title', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message:
+        'fix: Improve API handling (#42)\n\n* fix: Handle empty responses\n\n* refactor(api)!: Drop v1 endpoints',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v4.0.0');
+});
+
+test('ignore body lines that are not conventional commits', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message: 'fix: Improve API handling\n\nThis is not a feat: just a description\n* Update docs',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.5.10');
+});
+
+test('create minor release for a scoped feature title', async () => {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = [
+    {
+      message: 'feat(storage): Add Redis lock monitor',
+      sha: 'a8cb3d0eae1f1a064896493f4cf63dafc17bafcf',
+    },
+    {
+      message: 'fix: Previous release commit',
+      sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+    },
+  ];
+
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
+
+  expect(res.createdReleaseTag?.toString()).toBe('v3.6.0');
+});
+
 test('create major release', async () => {
   const baseVer = '1.0.0';
 

@@ -103,7 +103,9 @@ export async function CreateReleaseTag(
     let reachedLatestReleaseCommit = false;
     let pullRequestTitlesAvailable = true;
     const semanticCommitRegExp =
-      /(feat|fix|chore|refactor|style|test|docs)(\(#(\w{0,15})\))?(!)?:\s?(.*)/i;
+      /(feat|fix|chore|refactor|style|test|docs)(\([^)]*\))?(!)?:\s?(.*)/i;
+    const squashedCommitRegExp =
+      /^\s*(?:[*-]\s+)?(feat|fix|chore|refactor|style|test|docs)(\([^)]*\))?(!)?:\s?(.*)/i;
 
     // Choose the most significant change among all commits since previous release
     for (const commit of commits) {
@@ -147,19 +149,34 @@ export async function CreateReleaseTag(
         }
 
         // Breaking change rules described here https://www.conventionalcommits.org/en/v1.0.0/
-        const breakingChangeSign = matches[4];
+        const breakingChangeSign = matches[3];
         if (breakingChangeSign || semanticMessage.includes('BREAKING CHANGE:')) {
           incrementMajor = true;
           continue;
         }
 
-        const commitType = matches[1];
+        const commitType = matches[1].toLowerCase();
         if (commitType === 'feat') {
           incrementMinor = true;
           continue;
         }
 
         incrementPatch = true;
+      }
+
+      // Squash merges list the squashed commits in the body (e.g. "* feat: ..."), so a
+      // `fix:` PR title must not hide a `feat:` or breaking commit that was squashed into it.
+      for (const line of (message ?? '').split('\n').slice(1)) {
+        const matches = squashedCommitRegExp.exec(line);
+        if (matches === null) {
+          continue;
+        }
+
+        if (matches[3]) {
+          incrementMajor = true;
+        } else if (matches[1].toLowerCase() === 'feat') {
+          incrementMinor = true;
+        }
       }
     }
 
