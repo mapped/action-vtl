@@ -11,7 +11,7 @@ inputs:
     required: false
     default: ''
   gitHubToken:
-    description: 'The GITHUB_TOKEN value. Required to produce latest tags.'
+    description: 'The GITHUB_TOKEN value. Needs contents:write and pull-requests:read permissions to create release tags and read PR titles.'
     required: false
     default: ''
   branchMappings:
