@@ -1,5 +1,6 @@
 import {test, expect, vi, beforeEach} from 'vitest';
 import {CreateReleaseTag} from '../src/releasetag/createreleasetag';
+import {ScopeRules} from '../src/releasetag/scopes';
 import type {CommitInfo, TagInfo} from '../src/releasetag/githubclient';
 import type {context} from '@actions/github';
 
@@ -371,6 +372,72 @@ test('create minor release for a scoped feature title', async () => {
   const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false);
 
   expect(res.createdReleaseTag?.toString()).toBe('v3.6.0');
+});
+
+const scopeRules = (): ScopeRules =>
+  new ScopeRules(new Set(['bacnet', 'storage']), new Set(['ci', 'rollout-cli', '.github']));
+
+// bumpWith releases the given commit messages (newest first) on top of v3.5.9; titles are
+// the pull request titles of the newest commit.
+async function bumpWith(
+  messages: string[],
+  titles: string[] = [],
+  rules: ScopeRules | null = scopeRules(),
+): Promise<string | undefined> {
+  tags = [{name: 'v3.5.9', sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010'}];
+  commits = messages.map((message, i) => ({message, sha: `${i}`.padStart(40, '1')}));
+  commits.push({
+    message: 'fix: Previous release commit',
+    sha: '0869c0d9638268ffbd1e03974ab0cdd07070c010',
+  });
+  if (titles.length > 0) {
+    pullRequestTitles = {[commits[0].sha]: titles};
+  }
+  const res = await CreateReleaseTag(generateContext(), 'token', 'main', '1.0.0', false, '', rules);
+  return res.createdReleaseTag?.toString();
+}
+
+test('create patch release for a feature with tooling scopes only', async () => {
+  expect(await bumpWith(['feat(rollout-cli): Add a demo command'])).toBe('v3.5.10');
+  expect(await bumpWith(['feat(ci,.github): Shard the tests'])).toBe('v3.5.10');
+});
+
+test('create minor release for a feature with a product scope', async () => {
+  expect(await bumpWith(['feat(bacnet): Retry router discovery'])).toBe('v3.6.0');
+  expect(await bumpWith(['feat(ci, bacnet): Mixed scopes count as product'])).toBe('v3.6.0');
+});
+
+test('create minor release for a feature without a scope or with an unknown scope', async () => {
+  expect(await bumpWith(['feat: No scope'])).toBe('v3.6.0');
+  expect(await bumpWith(['feat(newthing): Unknown scope'])).toBe('v3.6.0');
+});
+
+test('tooling features keep the minor bump without scope lists', async () => {
+  expect(await bumpWith(['feat(rollout-cli): Add a demo command'], [], null)).toBe('v3.6.0');
+});
+
+test('a product feature anywhere in the release wins over tooling features', async () => {
+  expect(await bumpWith(['feat(ci): Tooling', 'feat(storage): Product'])).toBe('v3.6.0');
+  // Tooling subject, product commit squashed into the body.
+  expect(
+    await bumpWith([
+      'feat(ci): Tooling title (#1)\n\n* feat(bacnet): product commit\n* fix(ci): cleanup',
+    ]),
+  ).toBe('v3.6.0');
+  // Tooling subject, product pull request title.
+  expect(await bumpWith(['feat(ci): Tooling subject'], ['feat(bacnet): Product title'])).toBe(
+    'v3.6.0',
+  );
+});
+
+test('squashed tooling features under a fix title stay a patch release', async () => {
+  expect(await bumpWith(['fix(bacnet): Fix (#2)\n\n* feat(rollout-cli): tooling feature'])).toBe(
+    'v3.5.10',
+  );
+});
+
+test('breaking changes stay major whatever the scope', async () => {
+  expect(await bumpWith(['feat(ci)!: Breaking tooling change'])).toBe('v4.0.0');
 });
 
 test('create major release', async () => {

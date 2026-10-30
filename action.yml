@@ -38,6 +38,14 @@ inputs:
     description: 'Forces to increment patch if no changes were made since the last release'
     required: false
     default: 'false'
+  productScopesFile:
+    description: 'Conventional-commit scopes that ship to users, one per line (# starts a comment line). Only used for warnings about unknown scopes: every scope not in the tooling list counts as product. Read from the checked-out repository; ignored when missing.'
+    required: false
+    default: '.github/release-notes-product-scopes'
+  toolingScopesFile:
+    description: 'Conventional-commit scopes that only serve development (CI, internal tools), one per line (# starts a comment line). A feat whose scopes are all listed here bumps only the patch version. Without this file every feat bumps the minor version. Set to an empty string to turn it off.'
+    required: false
+    default: '.github/release-notes-tooling-scopes'
   dockerPlatformSuffix:
     description: 'Adds a suffix to the docker tag to identify the platform that can be referenced by a composit manifest'
     required: false

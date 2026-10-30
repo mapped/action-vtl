@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import {GitHubClient} from './githubclient.js';
 import {ReleaseTagVersion} from './releasetagversion.js';
+import type {ScopeRules} from './scopes.js';
 import type {context} from '@actions/github';
 
 type Context = typeof context;
@@ -33,6 +34,8 @@ export async function CreateReleaseTag(
   baseVersionStr: string | null,
   forcePatchIncrementIfNoChanges: boolean,
   tagPrefix = '',
+  // With scope lists, a `feat` whose scopes are all tooling bumps the patch version only.
+  scopeRules: ScopeRules | null = null,
 ): Promise<CreateReleaseResult> {
   const baseVersion = ReleaseTagVersion.parse(baseVersionStr);
   if (baseVersion === null) {
@@ -154,7 +157,7 @@ export async function CreateReleaseTag(
         }
 
         const commitType = matches[1].toLowerCase();
-        if (commitType === 'feat') {
+        if (commitType === 'feat' && !scopeRules?.isToolingOnly(matches[2])) {
           incrementMinor = true;
           continue;
         }
@@ -175,7 +178,7 @@ export async function CreateReleaseTag(
 
         if (matches[3]) {
           incrementMajor = true;
-        } else if (matches[1].toLowerCase() === 'feat') {
+        } else if (matches[1].toLowerCase() === 'feat' && !scopeRules?.isToolingOnly(matches[2])) {
           incrementMinor = true;
         }
       }

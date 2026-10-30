@@ -1,9 +1,11 @@
 import fs from 'fs';
+import path from 'path';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import {GetDockerInfo} from './docker.js';
 import {GetOCI} from './oci.js';
 import {CreateReleaseTag} from './releasetag/createreleasetag.js';
+import {LoadScopeRules} from './releasetag/scopes.js';
 import {SemVer} from './version.js';
 
 function isObject<T>(obj: T): boolean {
@@ -71,6 +73,19 @@ export async function run(): Promise<void> {
   const forcePatchIncrementIfNoChanges =
     core.getInput('forcePatchIncrementIfNoChanges')?.trim()?.toLowerCase() === 'true';
 
+  // Scope lists decide whether a `feat` bumps the minor version (product) or only the patch
+  // version (tooling). Relative paths are read from the checked-out repository; an empty
+  // input turns the list off.
+  const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
+  const scopesFile = (input: string): string => {
+    const file = core.getInput(input)?.trim() ?? '';
+    return file === '' ? '' : path.resolve(workspace, file);
+  };
+  const scopeRules = LoadScopeRules(
+    scopesFile('productScopesFile'),
+    scopesFile('toolingScopesFile'),
+  );
+
   // Create a release tag
   const createReleaseTagRes = await CreateReleaseTag(
     github.context,
@@ -79,6 +94,7 @@ export async function run(): Promise<void> {
     baseVer,
     forcePatchIncrementIfNoChanges,
     tagPrefix,
+    scopeRules,
   );
 
   // Process the input
