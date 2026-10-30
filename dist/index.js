@@ -29471,6 +29471,8 @@ __nccwpck_require__.d(__webpack_exports__, {
 
 ;// CONCATENATED MODULE: external "fs"
 const external_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("fs");
+;// CONCATENATED MODULE: external "path"
+const external_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
 ;// CONCATENATED MODULE: external "os"
 const external_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("os");
 ;// CONCATENATED MODULE: ./node_modules/@actions/core/lib/utils.js
@@ -29638,8 +29640,6 @@ function file_command_prepareKeyValueMessage(key, value) {
     return `${key}<<${delimiter}${external_os_namespaceObject.EOL}${convertedValue}${external_os_namespaceObject.EOL}${delimiter}`;
 }
 //# sourceMappingURL=file-command.js.map
-;// CONCATENATED MODULE: external "path"
-const external_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
 // EXTERNAL MODULE: external "http"
 var external_http_ = __nccwpck_require__(8611);
 // EXTERNAL MODULE: external "https"
@@ -37949,7 +37949,9 @@ class CreateReleaseResult {
         return (this.createdReleaseTag ?? this.previousReleaseTag).toString();
     }
 }
-async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, forcePatchIncrementIfNoChanges, tagPrefix = '') {
+async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, forcePatchIncrementIfNoChanges, tagPrefix = '', 
+// With scope lists, a `feat` whose scopes are all tooling bumps the patch version only.
+scopeRules = null) {
     const baseVersion = ReleaseTagVersion.parse(baseVersionStr);
     if (baseVersion === null) {
         throw Error(`Failed to parse base version '${baseVersionStr}'`);
@@ -38048,7 +38050,7 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
                     continue;
                 }
                 const commitType = matches[1].toLowerCase();
-                if (commitType === 'feat') {
+                if (commitType === 'feat' && !scopeRules?.isToolingOnly(matches[2])) {
                     incrementMinor = true;
                     continue;
                 }
@@ -38067,7 +38069,7 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
                 if (matches[3]) {
                     incrementMajor = true;
                 }
-                else if (matches[1].toLowerCase() === 'feat') {
+                else if (matches[1].toLowerCase() === 'feat' && !scopeRules?.isToolingOnly(matches[2])) {
                     incrementMinor = true;
                 }
             }
@@ -38109,7 +38111,107 @@ async function CreateReleaseTag(context, token, releasesBranch, baseVersionStr, 
     return res;
 }
 //# sourceMappingURL=createreleasetag.js.map
+;// CONCATENATED MODULE: ./lib/releasetag/scopes.js
+
+
+// ScopeRules says which conventional-commit scopes ship to users (product) and which
+// only serve development (tooling, e.g. CI or internal CLIs). A `feat` whose scopes are
+// all tooling bumps the patch version instead of the minor one.
+class ScopeRules {
+    constructor(product, tooling) {
+        this.product = product;
+        this.tooling = tooling;
+        this.warned = new Set();
+    }
+    // isToolingOnly reports whether the scope group of a commit subject ("(a,b)", or
+    // undefined without a scope) names tooling scopes only. A commit without a scope, or
+    // with any product or unknown scope, is not tooling-only: an unknown scope counts as
+    // product (the conservative choice) and is warned about once.
+    isToolingOnly(scopeGroup) {
+        const scopes = parseScopes(scopeGroup);
+        if (scopes.length === 0) {
+            return false;
+        }
+        let toolingOnly = true;
+        for (const scope of scopes) {
+            if (this.tooling.has(scope)) {
+                continue;
+            }
+            toolingOnly = false;
+            if (!this.product.has(scope) && !this.warned.has(scope)) {
+                this.warned.add(scope);
+                warning(`Scope '${scope}' is in neither scope list; counting it as a product scope.`);
+            }
+        }
+        return toolingOnly;
+    }
+}
+// parseScopes splits a scope group such as "(netsim, bacnet)" into lower-case scopes.
+function parseScopes(scopeGroup) {
+    if (!scopeGroup) {
+        return [];
+    }
+    return scopeGroup
+        .replace(/^\(/, '')
+        .replace(/\)$/, '')
+        .split(',')
+        .map(s => s.trim().toLowerCase())
+        .filter(s => s !== '');
+}
+// parseScopeList reads one scope per line; blank lines and lines starting with '#' are
+// skipped.
+function parseScopeList(text) {
+    const scopes = new Set();
+    for (const line of text.split(/\r?\n/)) {
+        const scope = line.trim().toLowerCase();
+        if (scope === '' || scope.startsWith('#')) {
+            continue;
+        }
+        scopes.add(scope);
+    }
+    return scopes;
+}
+// LoadScopeRules reads the product and tooling scope lists. Without a tooling list there
+// is nothing to treat differently, so it returns null and every `feat` bumps the minor
+// version as before. A missing product list only means that every scope outside the
+// tooling list counts as product. A list that cannot be read (a directory, no permission)
+// counts as missing, with a warning: it must never stop a release.
+function LoadScopeRules(productFile, toolingFile) {
+    const read = (file) => {
+        if (!file || !external_fs_namespaceObject.existsSync(file)) {
+            return null;
+        }
+        try {
+            return parseScopeList(external_fs_namespaceObject.readFileSync(file, 'utf8'));
+            /* eslint-disable @typescript-eslint/no-explicit-any */
+        }
+        catch (error) {
+            /* eslint-enable @typescript-eslint/no-explicit-any */
+            warning(`Cannot read the scope list '${file}' (${error?.message}); ignoring it.`);
+            return null;
+        }
+    };
+    const tooling = read(toolingFile);
+    if (tooling === null) {
+        info(`No tooling scope list at '${toolingFile}': every feat bumps the minor version.`);
+        return null;
+    }
+    const product = read(productFile) ?? new Set();
+    // A scope in both lists counts as product: a wrong list must never cost a minor bump.
+    for (const scope of [...tooling]) {
+        if (product.has(scope)) {
+            tooling.delete(scope);
+            warning(`Scope '${scope}' is in both '${productFile}' and '${toolingFile}'; counting it as a product scope.`);
+        }
+    }
+    info(`Scope lists: ${product.size} product scope(s) from '${productFile}', ${tooling.size} tooling scope(s) from '${toolingFile}'. ` +
+        'A feat with tooling scopes only bumps the patch version.');
+    return new ScopeRules(product, tooling);
+}
+//# sourceMappingURL=scopes.js.map
 ;// CONCATENATED MODULE: ./lib/main.js
+
+
 
 
 
@@ -38169,8 +38271,17 @@ async function run() {
     const releasesBranch = getInput('releasesBranch')?.trim() ?? '';
     // Get a value indicating whether to increment patch if there is no changes detected since previous release
     const forcePatchIncrementIfNoChanges = getInput('forcePatchIncrementIfNoChanges')?.trim()?.toLowerCase() === 'true';
+    // Scope lists decide whether a `feat` bumps the minor version (product) or only the patch
+    // version (tooling). Relative paths are read from the checked-out repository; an empty
+    // input turns the list off.
+    const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
+    const scopesFile = (input) => {
+        const file = getInput(input)?.trim() ?? '';
+        return file === '' ? '' : external_path_namespaceObject.resolve(workspace, file);
+    };
+    const scopeRules = LoadScopeRules(scopesFile('productScopesFile'), scopesFile('toolingScopesFile'));
     // Create a release tag
-    const createReleaseTagRes = await CreateReleaseTag(github_context, gitHubToken, releasesBranch, baseVer, forcePatchIncrementIfNoChanges, tagPrefix);
+    const createReleaseTagRes = await CreateReleaseTag(github_context, gitHubToken, releasesBranch, baseVer, forcePatchIncrementIfNoChanges, tagPrefix, scopeRules);
     // Process the input
     const verInfo = await SemVer(createReleaseTagRes.getBaseVersionOverride(), createReleaseTagRes.isPrerelease(), branchMappings, preReleasePrefix, github_context);
     const ociInfo = await GetOCI(verInfo, github_context);
