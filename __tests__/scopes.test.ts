@@ -47,6 +47,15 @@ test('without a tooling list the scope rules are off', () => {
   expect(LoadScopeRules('', '')).toBeNull();
 });
 
+test('an unreadable list counts as missing instead of failing the release', () => {
+  const directory = path.join(dir, 'a-directory');
+  fs.mkdirSync(directory);
+  expect(LoadScopeRules(write('product', 'bacnet\n'), directory)).toBeNull();
+  const rules = LoadScopeRules(directory, write('tooling', 'ci\n'));
+  expect(rules?.isToolingOnly('(ci)')).toBe(true);
+  expect(rules?.isToolingOnly('(bacnet)')).toBe(false);
+});
+
 test('a missing product list only means everything outside tooling is product', () => {
   const rules = LoadScopeRules(path.join(dir, 'missing'), write('tooling', 'ci\n'));
   expect(rules?.isToolingOnly('(ci)')).toBe(true);

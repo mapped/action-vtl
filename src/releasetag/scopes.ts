@@ -66,13 +66,21 @@ export function parseScopeList(text: string): Set<string> {
 // LoadScopeRules reads the product and tooling scope lists. Without a tooling list there
 // is nothing to treat differently, so it returns null and every `feat` bumps the minor
 // version as before. A missing product list only means that every scope outside the
-// tooling list counts as product.
+// tooling list counts as product. A list that cannot be read (a directory, no permission)
+// counts as missing, with a warning: it must never stop a release.
 export function LoadScopeRules(productFile: string, toolingFile: string): ScopeRules | null {
   const read = (file: string): Set<string> | null => {
     if (!file || !fs.existsSync(file)) {
       return null;
     }
-    return parseScopeList(fs.readFileSync(file, 'utf8'));
+    try {
+      return parseScopeList(fs.readFileSync(file, 'utf8'));
+      /* eslint-disable @typescript-eslint/no-explicit-any */
+    } catch (error: any) {
+      /* eslint-enable @typescript-eslint/no-explicit-any */
+      core.warning(`Cannot read the scope list '${file}' (${error?.message}); ignoring it.`);
+      return null;
+    }
   };
   const tooling = read(toolingFile);
   if (tooling === null) {
