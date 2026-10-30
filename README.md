@@ -16,6 +16,26 @@ All versions are stored inside of tags. After every commit inside of the main br
 | `fix: Remove wrong user name\n\nBREAKING CHANGE: Changed user name format`  | Increment **MAJOR** version (by adding a `BREAKING CHANGE:` footer. It must be uppercase, contain `:` without any spaces in between, and be separated from the title by a blank line, otherwise git treats it as part of the title) |
 | `Rename user profile classes`                                               | If you do NOT follow the [conventional commit messages](https://www.conventionalcommits.org/en/v1.0.0/) then it will increment **PATCH**                                                                                            |
 
+### Product and tooling scopes
+
+A repository can say which conventional-commit scopes ship to users (product) and which only serve development
+(tooling: CI, tests, internal CLIs), so that tooling features do not move the product's minor version. Put one scope per
+line into `.github/release-notes-tooling-scopes` and `.github/release-notes-product-scopes` (`#` starts a comment line;
+the `toolingScopesFile` and `productScopesFile` inputs override the paths). The highest rule that applies to any commit
+message, pull request title or squashed commit line since the last release decides:
+
+| #   | Change                                                       | Bump      |
+| --- | ------------------------------------------------------------ | --------- |
+| 1   | breaking (`!` or `BREAKING CHANGE:`), whatever the scope     | **MAJOR** |
+| 2   | `feat` with at least one scope that is not a tooling scope   | **MINOR** |
+| 3   | `feat` without a scope                                       | **MINOR** |
+| 4   | `feat` whose scopes are all tooling scopes, e.g. `feat(ci):` | **PATCH** |
+| 5   | anything else                                                | **PATCH** |
+
+A scope in neither list counts as product and is reported as a warning; a scope in both lists counts as product. Without
+a tooling list every `feat` bumps the minor version, as before. The workflow must check out the repository before this
+action runs, so that the lists can be read.
+
 **NOTE**: Tags are only created in `main` branch. So if you work in a separate branch it will NOT create any release until you merge the changes into `main`.
 
 **NOTE**: If you want tags to be created on every build even if there is no any change detected from previous release then set `forcePatchIncrementIfNoChanges: true` parameter.
@@ -96,18 +116,20 @@ _(These outputs are not shown in the examples below for brevity)_
 
 The following inputs can be passed to this action as `step.with` keys:
 
-| Name                             | Type   | Description                                                                                                                                                                                          |
-| -------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `baseVersion`                    | String | The base version of this repo. The first version of release. Applied if there is no any release yet. "v" prefix is optional.                                                                         |
-| `dockerImage`                    | String | The name of the docker image to produce tags for. If omitted, no docker tags will be produced. (default ``)                                                                                          |
-| `gitHubToken`                    | String | The GITHUB_TOKEN value. Requires `contents: write` to create release tags. Optional `pull-requests: read` lets PR titles drive version bumps; without it only commit messages are used. (default ``) |
-| `branchMappings`                 | List   | Used for mapping untagged branches to tag names. Mappings are one per line, each as `branch:target_name`. (default `main:edge`)                                                                      |
-| `prereleasePrefix`               | String | The <pre-release> prefix on an untagged run. (default `rc`)                                                                                                                                          |
-| `tagPrefix`                      | String | Prefix GitHub tag names with a string of your choice.                                                                                                                                                |
-| `versionFile`                    | String | A filename where the full SEMVER and commit SHA will be written. Set to empty string if you do not want a version file to be created. (default `VERSION`)                                            |
-| `releasesBranch`                 | String | Branch where automatic releases should be created. Set to empty string to deactivate releases creation. (default `main`)                                                                             |
-| `forcePatchIncrementIfNoChanges` | String | Forces to increment patch if no changes were made since the last release. (default ``)                                                                                                               |
-| `dockerPlatformSuffix`           | String | Adds a suffix to the docker tag to identify the platform that can be referenced by a composit manifest. (default ``)                                                                                 |
+| Name                             | Type   | Description                                                                                                                                                                                                        |
+| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `baseVersion`                    | String | The base version of this repo. The first version of release. Applied if there is no any release yet. "v" prefix is optional.                                                                                       |
+| `dockerImage`                    | String | The name of the docker image to produce tags for. If omitted, no docker tags will be produced. (default ``)                                                                                                        |
+| `gitHubToken`                    | String | The GITHUB_TOKEN value. Requires `contents: write` to create release tags. Optional `pull-requests: read` lets PR titles drive version bumps; without it only commit messages are used. (default ``)               |
+| `branchMappings`                 | List   | Used for mapping untagged branches to tag names. Mappings are one per line, each as `branch:target_name`. (default `main:edge`)                                                                                    |
+| `prereleasePrefix`               | String | The <pre-release> prefix on an untagged run. (default `rc`)                                                                                                                                                        |
+| `tagPrefix`                      | String | Prefix GitHub tag names with a string of your choice.                                                                                                                                                              |
+| `versionFile`                    | String | A filename where the full SEMVER and commit SHA will be written. Set to empty string if you do not want a version file to be created. (default `VERSION`)                                                          |
+| `releasesBranch`                 | String | Branch where automatic releases should be created. Set to empty string to deactivate releases creation. (default `main`)                                                                                           |
+| `forcePatchIncrementIfNoChanges` | String | Forces to increment patch if no changes were made since the last release. (default ``)                                                                                                                             |
+| `dockerPlatformSuffix`           | String | Adds a suffix to the docker tag to identify the platform that can be referenced by a composit manifest. (default ``)                                                                                               |
+| `toolingScopesFile`              | String | Scopes that only serve development, one per line; a `feat` with only these scopes bumps the patch version (see "Product and tooling scopes"). Empty turns it off. (default `.github/release-notes-tooling-scopes`) |
+| `productScopesFile`              | String | Scopes that ship to users, one per line; used to warn about scopes in neither list. (default `.github/release-notes-product-scopes`)                                                                               |
 
 ## Examples:
 
