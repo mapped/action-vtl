@@ -1,5 +1,5 @@
-name: 'mapped/action-semver'
-description: 'Establishes a common SEMVER in enviornment variables and version.txt file'
+name: 'mapped/action-vtl'
+description: 'Establishes a common SEMVER in environment variables and version.txt file'
 author: 'Mapped <info@mapped.com>'
 
 inputs:

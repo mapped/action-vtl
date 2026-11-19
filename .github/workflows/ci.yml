@@ -5,43 +5,60 @@ on:
       - "renovate/3rd-party**" # Do not build 3rd party package updates automatically to avoid some hacked package stealing all our secrets https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
 
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
 
 jobs:
-  ci:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Build
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm run format-check
+      - run: npm run lint
+      - run: npm run package
+      - run: npm test
+
+      - name: Assemble the action
         run: |
           mkdir release
-          npm install
-          npm run all
           cp -R dist action.yml release/
 
-      - name: Test
+      - name: Test the assembled action
         uses: ./release
         with:
           baseVersion: 1.2.3
 
-      - name: Release branch name
-        id: release_branch_name
-        run: |
-          branch=latest
+      - uses: actions/upload-artifact@v6
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: release
+          path: release
+          retention-days: 1
 
-          if [[ $GITHUB_REF != refs/heads/main ]]; then
-            branch=dev-${GITHUB_REF#refs/heads/}
-          fi
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: publish-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: release
+          path: release
 
-          echo "branch=$branch"
-          echo "branch=$branch" >> $GITHUB_OUTPUT
-
-      - name: Publish into release branch
-        uses: s0/git-publish-subdir-action@v2.6.0
+      - name: Publish into the latest branch
+        uses: s0/git-publish-subdir-action@92faf786f11dfa44fc366ac3eb274d193ca1af7e # v2.6.0
         env:
           REPO: self
-          BRANCH: ${{ steps.release_branch_name.outputs.branch }}
+          BRANCH: latest
           FOLDER: release
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,5 +2,25 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>mapped/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "enabled": true,
+      "groupName": "github actions",
+      "commitMessageTopic": "GitHub Actions",
+      "labels": [
+        "renovate",
+        "manual"
+      ],
+      "minimumReleaseAge": "3 days",
+      "schedule": [
+        "at any time"
+      ],
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "build"
+    }
   ]
 }
