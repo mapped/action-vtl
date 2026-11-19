@@ -25,41 +25,46 @@ jobs:
       - run: npm run package
       - run: npm test
 
-      - name: Assemble the action
+      - name: Check dist is up to date
         run: |
-          mkdir release
-          cp -R dist action.yml release/
+          if [ -n "$(git status --porcelain -- dist)" ]; then
+            echo "::error::dist/ does not match the source. Run 'npm run package' and commit dist/."
+            git status --porcelain -- dist
+            exit 1
+          fi
 
-      - name: Test the assembled action
-        uses: ./release
+      - name: Test the action
+        uses: ./
         with:
           baseVersion: 1.2.3
 
-      - uses: actions/upload-artifact@v6
-        if: github.ref == 'refs/heads/main'
-        with:
-          name: release
-          path: release
-          retention-days: 1
-
-  publish:
+  release:
     needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    concurrency: publish-latest
+    concurrency: release
     permissions:
       contents: write
+      pull-requests: read
     steps:
-      - uses: actions/download-artifact@v7
-        with:
-          name: release
-          path: release
+      - uses: actions/checkout@v6
 
-      - name: Publish into the latest branch
-        uses: s0/git-publish-subdir-action@92faf786f11dfa44fc366ac3eb274d193ca1af7e # v2.6.0
+      - name: Create the release tag
+        id: vtl
+        uses: ./
+        with:
+          baseVersion: 1.0.0
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          versionFile: ''
+
+      - name: Move the major and latest tags, and publish the release
+        if: steps.vtl.outputs.release_tag != ''
         env:
-          REPO: self
-          BRANCH: latest
-          FOLDER: release
-          MESSAGE: Update latest to output generated at ${{ github.sha }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.vtl.outputs.release_tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          major="${TAG%%.*}"
+          git tag -f "$major" "$GITHUB_SHA"
+          git tag -f latest "$GITHUB_SHA"
+          git push -f origin "refs/tags/$major" refs/tags/latest
+          gh release create "$TAG" --verify-tag --generate-notes --title "$TAG"

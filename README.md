@@ -96,18 +96,18 @@ _(These outputs are not shown in the examples below for brevity)_
 ## Usage:
 
 ```yml
-# For the latest version built in main branch
+# Recommended: the latest release of major version 1. Never includes breaking changes.
+- uses: mapped/action-vtl@v1
+  with:
+    baseVersion: '1.2.3'
+
+# Pin an exact release, or its full commit SHA, if you update it yourself.
+- uses: mapped/action-vtl@v1.0.0
+  with:
+    baseVersion: '1.2.3'
+
+# The newest release of any major version. It can include breaking changes; use it at your own risk.
 - uses: mapped/action-vtl@latest
-  with:
-    baseVersion: '1.2.3'
-
-# For specific version (DEPRECATED, switched to latest branch. Use commit hash if you need to pin to a specific version)
-- uses: mapped/action-vtl@v0.2.0
-  with:
-    baseVersion: '1.2.3'
-
-# For testing the latest build from any branch
-- uses: mapped/action-vtl@dev
   with:
     baseVersion: '1.2.3'
 ```
@@ -327,13 +327,26 @@ and create a `VERSION` file with the contents:
 1. Install the dependencies
 
    ```bash
-   $ npm install
+   $ npm ci
    ```
 
-1. Build the package
+1. Build, lint, bundle and test
 
    ```bash
    $ npm run all
    ```
 
-1. Commit to the repo and it will automatically publish to `latest` (if you pushed to `main`) or `dev-<your-branch>` (if you are outside of `main`) branch
+1. Commit `dist/` together with your source changes. The action runs from `dist/`, and CI fails when
+   `dist/` does not match the source.
+
+## Releases
+
+Every merge to `main` creates a release from the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+since the previous one, using this action itself: `fix:` and other types bump the patch version, `feat:`
+the minor version, and `!` or `BREAKING CHANGE:` the major version. CI then:
+
+- tags the merge commit `vX.Y.Z` and publishes a GitHub release with generated notes,
+- moves the major tag (`vX`) to it, so `@v1` users get every non-breaking release,
+- moves `latest` to it.
+
+A breaking change starts a new major tag (`v2`); `v1` stays on the last `v1.x.y` release.
