@@ -61,4 +61,5 @@ jobs:
           REPO: self
           BRANCH: latest
           FOLDER: release
+          MESSAGE: Update latest to output generated at ${{ github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
