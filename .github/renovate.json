@@ -9,7 +9,6 @@
         "github-actions"
       ],
       "enabled": true,
-      "pinDigests": true,
       "groupName": "github actions",
       "commitMessageTopic": "GitHub Actions",
       "labels": [
