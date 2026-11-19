@@ -21,6 +21,15 @@
       ],
       "semanticCommitType": "chore",
       "semanticCommitScope": "build"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepNames": [
+        "node"
+      ],
+      "enabled": false
     }
   ]
 }
