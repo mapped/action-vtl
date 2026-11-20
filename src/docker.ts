@@ -29,15 +29,12 @@ export async function GetDockerInfo(
   let releases: ReposListReleasesResponseData[] | null = null;
   if (payload && token) {
     const octoKit = github.getOctokit(token);
-    const response = await octoKit.rest.repos.listReleases({
+    // listReleases resolves to {status, headers, data}; paginate returns the releases themselves
+    releases = await octoKit.paginate(octoKit.rest.repos.listReleases, {
       owner: context.repo.owner, // payload.repository.owner.name ?? '',
       repo: context.repo.repo, //payload.repository.name,
+      per_page: 100,
     });
-    if (!Array.isArray(response)) {
-      releases = [];
-    } else {
-      releases = response;
-    }
   }
 
   const tags = new Array<string>();
@@ -103,8 +100,9 @@ export async function GetDockerInfo(
         // Look through all the releases for a newer tag
         let newest = true;
         for (const release of releases) {
-          // Skip pre-releases
-          if (release.prerelease) {
+          // Skip drafts (listed to tokens with push access, never released), pre-releases,
+          // and releases whose tag is not a SEMVER (compareSemvers would throw)
+          if (release.draft || release.prerelease || !SEMVER_REGEX.test(release.tag_name)) {
             continue;
           }
 
